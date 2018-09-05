@@ -12,7 +12,7 @@ namespace telef::solver {
         using ConstPtr = std::shared_ptr<const GPUResidualBlock>;
 
         GPUResidualBlock(const int nRes): ResidualBlock(nRes) {
-            CUDA_ALLOC_AND_ZERO(residuals, static_cast<size_t>(nRes));
+            CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
         }
 
         /**
@@ -22,10 +22,11 @@ namespace telef::solver {
          * @param nParamsList
          */
         GPUResidualBlock(const int nRes, const std::vector<int> nParamsList): ResidualBlock(nRes) {
-            CUDA_ALLOC_AND_ZERO(residuals, static_cast<size_t>(nRes));
+            CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
 
             for(int nParams : nParamsList){
-                GPUParameterBlock::Ptr paramObj = std::make_shared(nRes, nParams);
+                GPUParameterBlock::Ptr paramObj = std::make_shared<GPUParameterBlock>(nRes, nParams);
+                parameterBlocks.push_back(paramObj);
             }
         }
 
@@ -38,7 +39,7 @@ namespace telef::solver {
         };
 
         void addParameterBlock(ParameterBlock::Ptr param) {
-            params.push_back(param);
+            parameterBlocks.push_back(param);
         }
 
         const std::vector<ParameterBlock::Ptr>& getParameterBlocks() const {
@@ -47,6 +48,7 @@ namespace telef::solver {
 
     private:
         float* residuals;
+        std::vector<ParameterBlock::Ptr> parameterBlocks;
     };
 
 }

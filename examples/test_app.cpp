@@ -1,3 +1,6 @@
+#include <iostream>
+
+#include "solver/solver.h"
 #include "solver/gpu/gpuResidualFunction.h"
 
 namespace {
@@ -16,5 +19,7 @@ int main(int ac, char* av[])
     std::vector<int> params = {1, 2};
     int nRes = 4;
     GPUResidualBlock testRB(nRes, params);
+
+    std::cout << "Hello World!" << std::endl;
 }
 
