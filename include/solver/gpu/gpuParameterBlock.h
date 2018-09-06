@@ -12,24 +12,24 @@ namespace telef::solver {
 
         GPUParameterBlock(const int nRes, const int nParams) : ParameterBlock(nRes, nParams){
             // TODO: Allocate cuda space for params and partial derivitives
-            CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(nParams));
-            CUDA_ALLOC_AND_ZERO(&resultParameters, static_cast<size_t>(nParams));
-            CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nParams));
+            utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(nParams));
+            utils::CUDA_ALLOC_AND_ZERO(&resultParameters, static_cast<size_t>(nParams));
+            utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nParams));
 
-            CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(nParams * nRes));
-            CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nParams));
-            CUDA_ALLOC_AND_ZERO(&hessians, static_cast<size_t>(nParams * nParams));
+            utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(nParams * nRes));
+            utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nParams));
+            utils::CUDA_ALLOC_AND_ZERO(&hessians, static_cast<size_t>(nParams * nParams));
         }
 
         virtual ~GPUParameterBlock(){
             //TODO: Free Cuda memory
-            CUDA_FREE(parameters);
-            CUDA_FREE(resultParameters);
-            CUDA_FREE(deltaParams);
+            utils::CUDA_FREE(parameters);
+            utils::CUDA_FREE(resultParameters);
+            utils::CUDA_FREE(deltaParams);
 
-            CUDA_FREE(jacobians);
-            CUDA_FREE(gradients);
-            CUDA_FREE(hessians);
+            utils::CUDA_FREE(jacobians);
+            utils::CUDA_FREE(gradients);
+            utils::CUDA_FREE(hessians);
         }
 
         virtual float* getParameters(){

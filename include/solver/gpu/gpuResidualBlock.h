@@ -12,7 +12,7 @@ namespace telef::solver {
         using ConstPtr = std::shared_ptr<const GPUResidualBlock>;
 
         GPUResidualBlock(const int nRes): ResidualBlock(nRes) {
-            CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
+            utils::CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
         }
 
         /**
@@ -22,33 +22,26 @@ namespace telef::solver {
          * @param nParamsList
          */
         GPUResidualBlock(const int nRes, const std::vector<int> nParamsList): ResidualBlock(nRes) {
-            CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
+            utils::CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
 
+            std::cout << "Num ParamBlocks: " << nParamsList.size() << std::endl;
             for(int nParams : nParamsList){
+                std::cout << "Num Params: " << nParams << std::endl;
                 GPUParameterBlock::Ptr paramObj = std::make_shared<GPUParameterBlock>(nRes, nParams);
                 parameterBlocks.push_back(paramObj);
             }
         }
 
         virtual ~GPUResidualBlock(){
-            CUDA_FREE(residuals);
+            utils::CUDA_FREE(residuals);
         }
 
         virtual float* getResiduals(){
             return residuals;
         };
 
-        void addParameterBlock(ParameterBlock::Ptr param) {
-            parameterBlocks.push_back(param);
-        }
-
-        const std::vector<ParameterBlock::Ptr>& getParameterBlocks() const {
-            return parameterBlocks;
-        }
-
     private:
         float* residuals;
-        std::vector<ParameterBlock::Ptr> parameterBlocks;
     };
 
 }

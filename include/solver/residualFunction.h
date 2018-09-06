@@ -11,7 +11,7 @@ namespace telef::solver {
 
         ResidualFunction(CostFunction::Ptr costFunc_,
                          ResidualBlock::Ptr resBlock_,
-                         const int weight_)
+                         const float weight_=1.0)
                 : costFunction(costFunc_),
                   residualBlock(resBlock_),
                   weight(weight_)

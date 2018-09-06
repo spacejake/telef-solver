@@ -21,64 +21,111 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DUSE_SSE4_INSTRUCTIONS=ON")
+# Required because of relocated static libray. We can delete it after we get rid of it.
+set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie")
+endif()
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -march=native -DUSE_SSE4_INSTRUCTIONS=ON")
 
 set(CUDA_GENCODES
         "-gencode arch=compute_52,code=sm_52 -gencode arch=compute_61,code=sm_61 "
         )
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -rdc=true ${CUDA_GENCODES}")
 set(CMAKE_CUDA_FLAGS_DEBUG "-g -G -DDEBUG")
-set(CMAKE_CUDA_FLAGS_RELEASE "-O3" )
+set(CMAKE_CUDA_FLAGS_RELEASE "-O3")
 set(CMAKE_CUDA_HOST_COMPILER gcc-7)
 
 find_package(CUDA REQUIRED)
+find_package(CBLAS REQUIRED)
 
-include_directories(${PROJECT_NAME}
-        PUBLIC ${CUDA_INCLUDE_DIRS}
-        PUBLIC ${CMAKE_SOURCE_DIR}/include/ )
-
-add_library(${PROJECT_NAME} SHARED
-        ##### HDR #####
+############## Define headers and sourcse ################
+set( interfaceHdr
         include/solver/costFunction.h
         include/solver/solver.h
         include/solver/residualBlock.h
         include/solver/residualFunction.h
         include/solver/parameterBlock.h
+        )
 
-        # GPU Solver
+set( interfaceSrc
+        src/solver/solver.cpp
+        src/solver/residualFunction.cpp
+        )
+
+set( gpuHdr
         include/solver/gpu/gpuParameterBlock.h
         include/solver/gpu/gpuResidualBlock.h
         include/solver/gpu/gpuResidualFunction.h
-
-        ##### SRC #####
-        src/solver/solver.cpp
         )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        VERSION ${PROJECT_VERSION}
-        SOVERSION 1)
 
+set( gpuSrc
+        src/solver/gpu/gpuResidualFunction.cpp
+        )
+
+set( cudaUtil
+        include/util/cudautil.h
+        )
+
+#source_group("Interface Header Files" FILES ${interfaceHdr})
+#source_group("Interface Source Files" FILES ${interfaceSrc})
+#source_group("GPU Interface Header Files" FILES ${gpuHdr})
+#source_group("Cuda Utils Header Files" FILES ${cudaUtil})
+
+######## linking and properties ########
+add_library(${PROJECT_NAME}
+        ##### HDR #####
+        ${interfaceHdr}
+
+        ${cudaUtil}
+
+        # GPU Solver
+        ${gpuHdr}
+
+        ##### SRC #####
+        ${interfaceSrc}
+
+        # GPU Solver
+        ${gpuSrc}
+        )
+
+set_target_properties(${PROJECT_NAME}
+        PROPERTIES
+            VERSION ${PROJECT_VERSION}
+            SOVERSION 1
+            CUDA_SEPARABLE_COMPILATION ON
+            RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+            #CXX_VISIBILITY_PRESET hidden
+            BUILD_SHARED_LIBS ON
         #PUBLIC_HEADER
-        #include/solver/test.h)
+            #include/solver/test.h
+        )
 
-
-set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_include_directories(${PROJECT_NAME}
+        PUBLIC ${CUDA_INCLUDE_DIRS}
+        PUBLIC ${CMAKE_SOURCE_DIR}/include/
+        PUBLIC /usr/local/include )
+target_link_libraries(${PROJECT_NAME}
+            ${CUDA_LIBRARIES}
+        )
 
 ###### INSTALL ######
-configure_file(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
+#configure_file(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
 
-install(TARGETS ${PROJECT_NAME}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#install(TARGETS ${PROJECT_NAME}
+#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+#install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc
+#        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
 
 ###### EXAMPLES ######
 add_executable(TestApp examples/test_app.cpp)
-target_link_libraries(TestApp ${PROJECT_NAME})
+target_link_libraries(TestApp ${PROJECT_NAME}
+        )
 
-
+###### Tests ######
 if (BUILD_TESTS)
     function(myaddtest testname testpath)
         add_executable(${testname} ${testpath})
