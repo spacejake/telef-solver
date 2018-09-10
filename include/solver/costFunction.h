@@ -35,7 +35,7 @@ namespace telef::solver {
          * @param computeJacobians
          * @return Cost, container of the produced Residuals and Jacobians
          */
-        virtual void evaluate(ResidualBlock::Ptr residualBlock) const = 0;
+        virtual void evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const = 0;
 
 
 //    private:

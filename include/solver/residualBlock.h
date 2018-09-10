@@ -32,7 +32,7 @@ namespace telef::solver {
 //            return params.size();
 //        };
 
-        const std::vector<ParameterBlock::Ptr>& getParameterBlocks() const {
+        std::vector<ParameterBlock::Ptr>& getParameterBlocks() {
             return parameterBlocks;
         }
 

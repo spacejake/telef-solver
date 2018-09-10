@@ -5,7 +5,7 @@
 using namespace telef::solver;
 
 ResidualBlock::Ptr ResidualFunction::evaluate(bool evalJacobians_) {
-    costFunction->evaluate(residualBlock);
+    costFunction->evaluate(residualBlock, evalJacobians_);
 
     if (evalJacobians_) {
         auto ParamBlocks  = residualBlock->getParameterBlocks();
