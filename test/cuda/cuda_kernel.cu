@@ -25,7 +25,7 @@ void _print_array(float *arr_d, int n) {
     // grid-striding loop
     for (int i = start_index; i < n; i += stride) {
 
-        printf("Element: %.2f\n", arr_d[i]);
+        printf("Element[%d]: %.2f\n", i, arr_d[i]);
 //        arr_d[i] += 1;
     }
 }
@@ -34,7 +34,10 @@ void print_array(float *arr_d, int n) {
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((n + BLOCKSIZE - 1) / BLOCKSIZE);
 
+    printf("Start\n");
     _print_array << < dimGrid, dimBlock >> > (arr_d, n);
+    cudaDeviceSynchronize();
+    printf("End\n");
 }
 
 __global__
@@ -63,6 +66,8 @@ void calc_res0(float *residuals, const float *params, const float *measurements,
 
 __global__
 void _calc_jacobi0(float *jacobians, const float *params, const int nRes, const int nParams) {
+    // TODO: document column order for jacobians, perhaps give option to switch between.
+    // Must Compute Jacobians in Column order!!!!, Due to cublas dependancy
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
     float a = params[0];
@@ -73,10 +78,16 @@ void _calc_jacobi0(float *jacobians, const float *params, const int nRes, const 
     // grid-striding loop
     for (int i = start_index; i < nRes; i += stride) {
         // Subtration becuase residuals are y - f(x), dx = -f'(x)
-        jacobians[i*nParams+0] = da;
-        jacobians[i*nParams+1] = dy;
-        printf("jacobians[%d]: %.2f\n", i*nParams+0, jacobians[i*nParams+0]);
-        printf("jacobians[%d]: %.2f\n", i*nParams+1, jacobians[i*nParams+1]);
+        jacobians[0*nRes+i] = da;
+        jacobians[1*nRes+i] = dy;
+        printf("jacobians[%d]: %.2f\n", 0*nRes+i, jacobians[0*nRes+i]);
+        printf("jacobians[%d]: %.2f\n", 1*nRes+i, jacobians[1*nRes+i]);
+//        //TODO: Fix column orderness, rightnow we are exploiting row-order mat == mat^T for CublasSgemm
+//        jacobians[i*nParams+0] = da;
+//        jacobians[i*nParams+1] = dy;
+//        printf("jacobians[%d]: %.2f\n", i*nParams+0, jacobians[i*nParams+0]);
+//        printf("jacobians[%d]: %.2f\n", i*nParams+1, jacobians[i*nParams+1]);
+
     }
 }
 

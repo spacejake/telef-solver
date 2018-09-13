@@ -46,27 +46,33 @@ set( interfaceHdr
         include/solver/residualBlock.h
         include/solver/residualFunction.h
         include/solver/parameterBlock.h
-        )
+)
 
 set( interfaceSrc
         src/solver/solver.cpp
         src/solver/residualFunction.cpp
-        )
+)
 
 set( gpuHdr
         include/solver/gpu/gpuParameterBlock.h
         include/solver/gpu/gpuResidualBlock.h
         include/solver/gpu/gpuResidualFunction.h
-        )
+)
 
 
 set( gpuSrc
         src/solver/gpu/gpuResidualFunction.cpp
-        )
+)
 
-set( cudaUtil
+set( cudaHdr
         include/util/cudautil.h
-        )
+        include/solver/gpu/cuda/cu_resudual.h
+)
+
+set( cudaHdr
+        include/util/cudautil.h
+        src/solver/gpu/cuda/cu_residual.cu
+)
 
 #source_group("Interface Header Files" FILES ${interfaceHdr})
 #source_group("Interface Source Files" FILES ${interfaceSrc})
@@ -78,7 +84,7 @@ add_library(${PROJECT_NAME}
         ##### HDR #####
         ${interfaceHdr}
 
-        ${cudaUtil}
+        ${cudaHdr}
 
         # GPU Solver
         ${gpuHdr}
@@ -108,6 +114,7 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC /usr/local/include )
 target_link_libraries(${PROJECT_NAME}
             ${CUDA_LIBRARIES}
+            -lcublas
         )
 
 ###### INSTALL ######

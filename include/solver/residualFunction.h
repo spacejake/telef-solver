@@ -32,6 +32,9 @@ namespace telef::solver {
             weight = weight_;
         }
 
+        ResidualBlock::Ptr getResidualBlock() {
+            return residualBlock;
+        }
 
 
     protected:
