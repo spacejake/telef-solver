@@ -42,7 +42,7 @@ void cudaMatMul_ATxB(float *matC,
                         matA, aRows/*leading dim*/, //(mxk) or if A^T: (kxm)
                         matB, bRows/*leading dim*/, //(kxn)
                         beta,
-                        matC, aRows/*leading dim*/); //(mxn)
+                        matC, aCols/*leading dim*/); //(mxn)
 
     if (status != CUBLAS_STATUS_SUCCESS) {
         throw std::runtime_error("MatMul Failed\n");
