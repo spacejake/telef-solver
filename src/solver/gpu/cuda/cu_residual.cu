@@ -10,7 +10,7 @@ void calc_gradients(float *gradients, float *jacobians, float *residuals, int nR
     int colA=nParams;
     int rowB=nRes;
     int colB=1;
-    cudaMatMul(gradients, jacobians, rowA, colA, residuals, rowB, colB);
+    cudaMatMul_ATxB(gradients, jacobians, rowA, colA, residuals, rowB, colB);
 }
 
 void cudaMatMul_ATxB(float *matC,

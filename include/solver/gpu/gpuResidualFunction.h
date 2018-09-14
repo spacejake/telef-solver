@@ -18,7 +18,7 @@ namespace telef::solver {
 
         virtual ~GPUResidualFunction(){}
 
-        virtual void calcGradients(float* gradients, float* residuals, float* jacobians, int nRes, int nParams);
+        virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams);
         virtual void calcHessians(float* hessians, float* jacobians, int nRes, int nParams);
     };
 }

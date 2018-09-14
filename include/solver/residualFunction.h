@@ -21,7 +21,7 @@ namespace telef::solver {
 
         ResidualBlock::Ptr evaluate(bool evalJacobians_);
 
-        virtual void calcGradients(float* gradients, float* residuals, float* jacobians, int nRes, int nParams) = 0;
+        virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams) = 0;
         virtual void calcHessians(float* hessians, float* jacobians, int nRes, int nParams) = 0;
 
 //        void initParams(std::vector<float*> initParams) {

@@ -11,7 +11,7 @@ namespace telef::solver {
         using ConstPtr = std::shared_ptr<const GPUParameterBlock>;
 
         GPUParameterBlock(const int nRes, const int nParams) : ParameterBlock(nRes, nParams){
-            // TODO: Allocate cuda space for params and partial derivitives
+            printf("ParamBlock with Res:%d and Params:%d\n", nRes, nParams);
             utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(nParams));
             utils::CUDA_ALLOC_AND_ZERO(&resultParameters, static_cast<size_t>(nParams));
             utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nParams));
@@ -22,7 +22,6 @@ namespace telef::solver {
         }
 
         virtual ~GPUParameterBlock(){
-            //TODO: Free Cuda memory
             utils::CUDA_FREE(parameters);
             utils::CUDA_FREE(resultParameters);
             utils::CUDA_FREE(deltaParams);

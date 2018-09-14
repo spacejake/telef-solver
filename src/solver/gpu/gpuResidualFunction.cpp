@@ -5,7 +5,7 @@
 
 using namespace telef::solver;
 
-void GPUResidualFunction::calcGradients(float *gradients, float *residuals, float *jacobians, int nRes, int nParams) {
+void GPUResidualFunction::calcGradients(float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
     std::cout << "Hello calcGradients" << std::endl;
     calc_gradients(gradients, jacobians, residuals, nRes, nParams);
 }
