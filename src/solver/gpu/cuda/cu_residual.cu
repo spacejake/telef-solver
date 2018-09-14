@@ -5,12 +5,12 @@
 
 
 void calc_gradients(float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
+    cudaMatMul_ATxB(gradients, jacobians, nRes, nParams, residuals, nRes, 1);
+}
 
-    int rowA=nRes;
-    int colA=nParams;
-    int rowB=nRes;
-    int colB=1;
-    cudaMatMul_ATxB(gradients, jacobians, rowA, colA, residuals, rowB, colB);
+
+void calc_hessians(float *hessians, float *jacobians, int nRes, int nParams){
+    cudaMatMul_ATxB(hessians, jacobians, nRes, nParams, jacobians, nRes, nParams);
 }
 
 void cudaMatMul_ATxB(float *matC,

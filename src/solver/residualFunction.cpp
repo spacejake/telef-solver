@@ -14,13 +14,13 @@ ResidualBlock::Ptr ResidualFunction::evaluate(bool evalJacobians_) {
 
             std::cout << "Num Params: " << paramBlock->numParameters() << std::endl;
             calcGradients(paramBlock->getGradients(),
-                          residualBlock->getResiduals(), paramBlock->getJacobians(),
-                          residualBlock->numResiduals(), paramBlock->numResiduals());
+                          paramBlock->getJacobians(), residualBlock->getResiduals(),
+                          residualBlock->numResiduals(), paramBlock->numParameters());
 
 
             calcHessians(paramBlock->getHessians(),
                          paramBlock->getJacobians(),
-                         residualBlock->numResiduals(), paramBlock->numResiduals());
+                         residualBlock->numResiduals(), paramBlock->numParameters());
         }
     }
 

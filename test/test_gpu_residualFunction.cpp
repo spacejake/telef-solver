@@ -45,7 +45,7 @@ private:
 };
 
 // A new one of these is created for each test
-class GPUResidualFunctionOtherTest : public testing::Test
+class GPUResidualFunctionTest : public testing::Test
 {
 public:
     GPUResidualFunction::Ptr residualFunc;
@@ -54,7 +54,6 @@ public:
     {
         std::vector<int> params = {2};
         int nRes = 4;
-
         float params_init[] = {0.5,0.5};
         GPUResidualBlock::Ptr resBlock = std::make_shared<GPUResidualBlock>(nRes, params);
         ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks().at(0);
@@ -72,90 +71,34 @@ public:
         float residuals[] = {-10.2631, -3.2631, -4.2631, -1.2631};
         float jacobians[] = {-1.0523, -1.0523, -1.0523, -1.0523,
                              -4.9164, -4.9164, -4.9164, -4.9164};
-//        float jacobians[] = {-1.0523, -4.9164,
-//                             -1.0523, -4.9164,
-//                             -1.0523, -4.9164,
-//                             -1.0523, -4.9164};
-
-        cudaMemcpy(resBlock->getResiduals(), residuals, nRes*sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(resBlock->getParameterBlocks()[0]->getJacobians(), jacobians, nRes*params[0]*sizeof(float), cudaMemcpyHostToDevice);
     }
 
     virtual void TearDown()
     {
     }
+
+    void initResiduals(){
+        auto resBlock = residualFunc->getResidualBlock();
+        int nRes = resBlock->numResiduals();
+        float residuals[] = {-10.2631, -3.2631, -4.2631, -1.2631};
+        cudaMemcpy(resBlock->getResiduals(), residuals, nRes*sizeof(float), cudaMemcpyHostToDevice);
+    }
+
+    void initJacobians(){
+        auto resBlock = residualFunc->getResidualBlock();
+        auto paramBlock = resBlock->getParameterBlocks()[0];
+        int nRes = resBlock->numResiduals();
+        int nParams = paramBlock->numParameters();
+        float jacobians[] = {-1.0523, -1.0523, -1.0523, -1.0523,
+                             -4.9164, -4.9164, -4.9164, -4.9164};
+        // row-order
+//        float jacobians[] = {-1.0523, -4.9164,
+//                             -1.0523, -4.9164,
+//                             -1.0523, -4.9164,
+//                             -1.0523, -4.9164};
+        cudaMemcpy(paramBlock->getJacobians(), jacobians, nRes*nParams*sizeof(float), cudaMemcpyHostToDevice);
+    }
 };
-
-//TEST(GPU_Residual_Function, interfaceTest) {
-//
-//    std::vector<int> params = {1, 2};
-//    int nRes = 4;
-//    GPUResidualBlock::Ptr resBlock = std::make_shared<GPUResidualBlock>(nRes, params);
-//    CostFunction::Ptr cost = std::make_shared<TestCostFunction>();
-//
-//    GPUResidualFunction::Ptr resFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
-//    resFunc->evaluate(true);
-//
-//    EXPECT_TRUE(true);
-//}
-
-
-//TEST(GPU_Residual_Function, evaluate) {
-//    /**
-//     * Measurement[0]:10.00
-//     * residuals[0]:-10.2631
-//     * Measurement[1]:3.00
-//     * residuals[1]:-3.2631
-//     * Measurement[2]:4.00
-//     * residuals[2]:-4.2631
-//     * Measurement[3]:1.00
-//     * residuals[3]:-1.2631
-//     * jacobians[0][0]:-1.0523
-//     * jacobians[0][1]:-4.9164
-//     * jacobians[1][0]:-1.0523
-//     * jacobians[1][1]:-4.9164
-//     * jacobians[2][0]:-1.0523
-//     * jacobians[2][1]:-4.9164
-//     * jacobians[3][0]:-1.0523
-//     * jacobians[3][1]:-4.9164
-//     */
-//
-//    std::vector<int> params = {2};
-//    int nRes = 4;
-//
-//    float params_init[] = {0.5,0.5};
-//    GPUResidualBlock::Ptr resBlock = std::make_shared<GPUResidualBlock>(nRes, params);
-//    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks().at(0);
-//    cudaMemcpy(paramBlock->getParameters(), params_init, 2* sizeof(float), cudaMemcpyHostToDevice);
-//
-//    CostFunction::Ptr cost = std::make_shared<TestCostFunction>();
-//
-//    GPUResidualFunction::Ptr resFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
-//
-//    resFunc->evaluate(true);
-//    cudaDeviceSynchronize();
-//
-//    float residuals[4];
-//    float jacobians[8];
-//
-//    cudaMemcpy(residuals, resBlock->getResiduals(), nRes*sizeof(float), cudaMemcpyDeviceToHost);
-//    cudaMemcpy(jacobians,resBlock->getParameterBlocks()[0]->getJacobians(), nRes*2*sizeof(float), cudaMemcpyDeviceToHost);
-//
-//    float real_res[] = {-10.2631, -3.2631, -4.2631, -1.2631};
-//    float real_jacobi[] = {-1.0523, -1.0523, -1.0523, -1.0523,
-//                           -4.9164, -4.9164, -4.9164, -4.9164};
-////    float real_jacobi[] = {-1.0523, -4.9164,
-////                           -1.0523, -4.9164,
-////                           -1.0523, -4.9164,
-////                           -1.0523, -4.9164};
-//
-//
-//    float ferr = 1e-4;
-//    EXPECT_THAT(residuals,
-//                Pointwise(FloatNear(ferr), real_res));
-//    EXPECT_THAT(jacobians,
-//                Pointwise(FloatNear(ferr), real_jacobi));
-//}
 
 TEST(Matrix, gpu_multiply) {
 
@@ -254,24 +197,76 @@ TEST(Matrix, gpu_multiply_ATxB) {
     cudaFree(C_d);
 }
 
-
-TEST_F(GPUResidualFunctionOtherTest, gradientTest) {
-
+TEST(CostFunctionTest, costEvaluate) {
+    /**
+     * Measurement[0]:10.00
+     * residuals[0]:-10.2631
+     * Measurement[1]:3.00
+     * residuals[1]:-3.2631
+     * Measurement[2]:4.00
+     * residuals[2]:-4.2631
+     * Measurement[3]:1.00
+     * residuals[3]:-1.2631
+     * jacobians[0][0]:-1.0523
+     * jacobians[0][1]:-4.9164
+     * jacobians[1][0]:-1.0523
+     * jacobians[1][1]:-4.9164
+     * jacobians[2][0]:-1.0523
+     * jacobians[2][1]:-4.9164
+     * jacobians[3][0]:-1.0523
+     * jacobians[3][1]:-4.9164
+     */
     std::vector<int> params = {2};
     int nRes = 4;
+
+    float params_init[] = {0.5,0.5};
+    GPUResidualBlock::Ptr resBlock = std::make_shared<GPUResidualBlock>(nRes, params);
+    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks().at(0);
+    cudaMemcpy(paramBlock->getParameters(), params_init, 2* sizeof(float), cudaMemcpyHostToDevice);
+
+    CostFunction::Ptr cost = std::make_shared<TestCostFunction>();
+
+    cost->evaluate(resBlock, true);
+
+    float residuals[4];
+    float jacobians[8];
+
+    cudaMemcpy(residuals, resBlock->getResiduals(), nRes*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(jacobians, resBlock->getParameterBlocks()[0]->getJacobians(), nRes*2*sizeof(float), cudaMemcpyDeviceToHost);
+
+    float real_res[] = {-10.2631, -3.2631, -4.2631, -1.2631};
+    float real_jacobi[] = {-1.0523, -1.0523, -1.0523, -1.0523,
+                           -4.9164, -4.9164, -4.9164, -4.9164};
+
+
+    float ferr = 1e-4;
+    EXPECT_THAT(residuals,
+                Pointwise(FloatNear(ferr), real_res));
+    EXPECT_THAT(jacobians,
+                Pointwise(FloatNear(ferr), real_jacobi));
+}
+
+TEST_F(GPUResidualFunctionTest, gradientTest) {
+    initResiduals();
+    initJacobians();
+
     ResidualBlock::Ptr resBlock = residualFunc->getResidualBlock();
     ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks()[0];
 
-//    print_array(paramBlock->getJacobians(), params[0]*nRes);
+    int nRes = resBlock->numResiduals();
+    int nParams = paramBlock->numParameters();
+
+//    print_array(paramBlock->getJacobians(), nParams*nRes);
 //    print_array(resBlock->getResiduals(), nRes*1);
 
     residualFunc->calcGradients(paramBlock->getGradients(), paramBlock->getJacobians(), resBlock->getResiduals(),
                                 resBlock->numResiduals(), paramBlock->numParameters());
-//    print_array(paramBlock->getGradients(), params[0]);
+//    print_array(paramBlock->getGradients(), nParams);
 
+    // size of nParams
     float gradients[2];
 
-    cudaMemcpy(gradients, paramBlock->getGradients(), 2*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(gradients, paramBlock->getGradients(), nParams*sizeof(float), cudaMemcpyDeviceToHost);
     float real_gradients[] = {20.0488, 93.6692};
 
 
@@ -280,3 +275,72 @@ TEST_F(GPUResidualFunctionOtherTest, gradientTest) {
                 Pointwise(FloatNear(ferr), real_gradients));
 }
 
+TEST_F(GPUResidualFunctionTest, hessiansTest) {
+    initResiduals();
+    initJacobians();
+
+    ResidualBlock::Ptr resBlock = residualFunc->getResidualBlock();
+    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks()[0];
+
+    int nRes = resBlock->numResiduals();
+    int nParams = paramBlock->numParameters();
+
+//    print_array(paramBlock->getJacobians(), nParams*nRes);
+
+    residualFunc->calcHessians(paramBlock->getHessians(), paramBlock->getJacobians(),
+                                resBlock->numResiduals(), paramBlock->numParameters());
+//    print_array(paramBlock->getHessians(), nParams*nParams);
+
+    // size of nParams*nParams
+    float hessiens[4];
+
+    cudaMemcpy(hessiens, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+    // column-Order, psst. this mat is same regardless, lol
+    float real_hessiens[] = {4.42934,  20.6941,
+                             20.6941, 96.684};
+
+    float ferr = 1e-4;
+    EXPECT_THAT(hessiens,
+                Pointwise(FloatNear(ferr), real_hessiens));
+}
+
+
+
+TEST_F(GPUResidualFunctionTest, evaluate) {
+
+    ResidualBlock::Ptr resBlock = residualFunc->getResidualBlock();
+    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks()[0];
+
+    int nRes = resBlock->numResiduals();
+    int nParams = paramBlock->numParameters();
+
+    residualFunc->evaluate(true);
+
+    float residuals[4];
+    float jacobians[8];
+    float gradients[2];
+    float hessiens[4];
+
+    cudaMemcpy(residuals, resBlock->getResiduals(), nRes*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(jacobians, paramBlock->getJacobians(), nRes*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(gradients, paramBlock->getGradients(), nParams*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hessiens, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+
+    float real_res[] = {-10.2631, -3.2631, -4.2631, -1.2631};
+    float real_jacobi[] = {-1.0523, -1.0523, -1.0523, -1.0523,
+                           -4.9164, -4.9164, -4.9164, -4.9164};
+    float real_gradients[] = {20.0488, 93.6692};
+    float real_hessiens[] = {4.42934,  20.6941,
+                             20.6941, 96.684};
+
+
+    float ferr = 1e-3;
+    EXPECT_THAT(residuals,
+                Pointwise(FloatNear(ferr), real_res));
+    EXPECT_THAT(jacobians,
+                Pointwise(FloatNear(ferr), real_jacobi));
+    EXPECT_THAT(gradients,
+                Pointwise(FloatNear(ferr), real_gradients));
+    EXPECT_THAT(hessiens,
+                Pointwise(FloatNear(ferr), real_hessiens));
+}

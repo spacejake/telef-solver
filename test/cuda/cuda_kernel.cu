@@ -52,7 +52,7 @@ void _calc_res0(float *residuals, const float *params, const float *measurements
     for (int i = start_index; i < nRes; i += stride) {
         float y = (3*a2)*sin(7*b);
         residuals[i] = y - measurements[i];
-        printf("Element: %.2f\n", residuals[i]);
+        //printf("Element: %.2f\n", residuals[i]);
     }
 }
 
@@ -77,12 +77,13 @@ void _calc_jacobi0(float *jacobians, const float *params, const int nRes, const 
 
     // grid-striding loop
     for (int i = start_index; i < nRes; i += stride) {
-        // Subtration becuase residuals are y - f(x), dx = -f'(x)
-        jacobians[0*nRes+i] = da;
-        jacobians[1*nRes+i] = dy;
-        printf("jacobians[%d]: %.2f\n", 0*nRes+i, jacobians[0*nRes+i]);
-        printf("jacobians[%d]: %.2f\n", 1*nRes+i, jacobians[1*nRes+i]);
-//        //TODO: Fix column orderness, rightnow we are exploiting row-order mat == mat^T for CublasSgemm
+        // residuals cumputed are f(x) - y, dx = f'(x), y is measurement
+        jacobians[nRes*0+i] = da;
+        jacobians[nRes*1+i] = dy;
+        //printf("jacobians[%d]: %.2f\n", 0*nRes+i, jacobians[0*nRes+i]);
+        //printf("jacobians[%d]: %.2f\n", 1*nRes+i, jacobians[1*nRes+i]);
+
+//        //row-order
 //        jacobians[i*nParams+0] = da;
 //        jacobians[i*nParams+1] = dy;
 //        printf("jacobians[%d]: %.2f\n", i*nParams+0, jacobians[i*nParams+0]);
