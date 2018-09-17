@@ -15,6 +15,8 @@ namespace telef::solver {
         virtual ~ResidualBlock(){}
 
         virtual float* getResiduals() = 0;
+        virtual float* getStep() = 0;
+        virtual float* getLambda() = 0;
 
         int numResiduals() {
             return nResiduals;

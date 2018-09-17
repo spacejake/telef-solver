@@ -57,21 +57,25 @@ set( gpuHdr
         include/solver/gpu/gpuParameterBlock.h
         include/solver/gpu/gpuResidualBlock.h
         include/solver/gpu/gpuResidualFunction.h
+        include/solver/gpu/gpuSolver.h
 )
 
 
 set( gpuSrc
         src/solver/gpu/gpuResidualFunction.cpp
+        src/solver/gpu/gpuSolver.cpp
 )
 
 set( cudaHdr
         include/util/cudautil.h
         include/solver/gpu/cuda/cu_resudual.h
+        include/solver/gpu/cuda/cu_solver.h
 )
 
 set( cudaHdr
         include/util/cudautil.h
         src/solver/gpu/cuda/cu_residual.cu
+        src/solver/gpu/cuda/cu_solver.cu
 )
 
 #source_group("Interface Header Files" FILES ${interfaceHdr})
@@ -148,6 +152,7 @@ if (BUILD_TESTS)
         add_test(NAME ${testname} COMMAND ${testname})
     endfunction(myaddtest)
 
+    include(CTest)
     find_package(CBLAS REQUIRED)
 
     # Download and unpack googletest at configure time

@@ -10,6 +10,8 @@ Status Solver::solve() {
 
     Status status = Status::RUNNING;
 
+    initialize_solver();
+
     //TODO: loop through each cost function, for now we assume one
     ResidualFunction::Ptr resFunc = residualFuncs.at(0);
 
@@ -35,7 +37,7 @@ Status Solver::solve() {
         for (ParameterBlock::Ptr paramBlock : paramBlocks) {
             //if good_step, update 1+lambda
             //else, update with (1 + lambda * up) / (1 + lambda)
-            updateHessians(paramBlock->getHessians(), paramBlock->numParameters());
+            updateHessians(paramBlock->getHessians(), resBlock->getStep(), paramBlock->numParameters());
 
             // Check if decompsition results in a symmetric positive-definite matrix
             solveSystemSuccess = solveSystem(paramBlock->getDeltaParameters(),
@@ -56,8 +58,7 @@ Status Solver::solve() {
             // if derr < 0, don't do jacobian recalc
             ResidualBlock::Ptr resBlock = resFunc->evaluate(good_step);
 
-            // Error is computed internally
-            newError = calcError(resBlock->getResiduals(), resBlock->numResiduals());
+            float error = calcError(resBlock->getResiduals(), resBlock->numResiduals());
 
             float derr = newError - error;
             good_step = derr <= 0;
@@ -79,17 +80,17 @@ Status Solver::solve() {
                 break;
             }
 
-            /* stepdown
+            /* stepdown (lambda*down)
              * mult = 1 + lambda;
              */
-            stepDown();
+            stepDown(resBlock->getStep(), resBlock->getLambda());
             innerIter = 0;
         } else {
             /*
              * mult = (1 + lambda * up) / (1 + lambda);
-             * stepup
+             * stepup (lambda*up)
              */
-            stepUp();
+            stepUp(resBlock->getStep(), resBlock->getLambda());
             innerIter++;
         }
     }

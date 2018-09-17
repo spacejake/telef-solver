@@ -292,16 +292,16 @@ TEST_F(GPUResidualFunctionTest, hessiansTest) {
 //    print_array(paramBlock->getHessians(), nParams*nParams);
 
     // size of nParams*nParams
-    float hessiens[4];
+    float hessians[4];
 
-    cudaMemcpy(hessiens, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hessians, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
     // column-Order, psst. this mat is same regardless, lol
-    float real_hessiens[] = {4.42934,  20.6941,
+    float real_hessians[] = {4.42934,  20.6941,
                              20.6941, 96.684};
 
     float ferr = 1e-4;
-    EXPECT_THAT(hessiens,
-                Pointwise(FloatNear(ferr), real_hessiens));
+    EXPECT_THAT(hessians,
+                Pointwise(FloatNear(ferr), real_hessians));
 }
 
 

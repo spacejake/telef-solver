@@ -41,3 +41,4 @@ target_sources(${PROJECT_NAME}
 
 # Add Google Tests
 myaddtest(test_gpu_residualFunction test_gpu_residualFunction.cpp)
+myaddtest(test_gpu_solver test_gpu_solver.cpp)

@@ -50,6 +50,9 @@ namespace telef::solver {
         // the user gives the solver the working memory space
         Status solve();
     protected:
+
+        virtual void initialize_solver() = 0;
+
         /****Interface to be implemented for CPU and GPU implementations****/
         /**
          * Chi-squares calculation, sum(res^2)
@@ -60,14 +63,9 @@ namespace telef::solver {
          * @return error, a single float value on host (float) representing the sum of squared residuals
          *
          */
-         //TODO: store in working error, separate call to save error for good iterations
         virtual float calcError(const float* residuals, const int nRes) = 0;
 
-        /**
-         * Returns array of Same number of params x number of parameter blocks
-         * @param gradients
-         * @return success of system sovler
-         */
+
         virtual bool solveSystem(float *deltaParams,
                                  const float* hessians, const float* gradients,
                                  const int nRes, const int nParams) = 0;
@@ -76,13 +74,13 @@ namespace telef::solver {
         virtual void updateFitParams(float* fitParams, const float* params, const int nParams) = 0;
 
         // Step Functions
-        virtual void updateHessians(float* hessians, const int nParams) = 0;
-        virtual void stepUp() = 0;
-        virtual void stepDown() = 0;
+        virtual void updateHessians(float* hessians, float* step, const int nParams) = 0;
+        virtual void stepUp(float* step, float* lambda) = 0;
+        virtual void stepDown(float* step, float* lambda) = 0;
 
-        //TODO: functions to help evaluate convergence??
-        virtual bool evaluateStep() = 0;
-        virtual bool evaluateConvergence() = 0;
+//        //TODO: functions to help evaluate convergence??
+//        virtual bool evaluateStep() = 0;
+//        virtual bool evaluateConvergence() = 0;
 
     protected:
         std::vector<ResidualFunction::Ptr> residualFuncs;
