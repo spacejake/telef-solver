@@ -52,3 +52,29 @@ void GPUSolver::stepDown(float* step, float* lambda) {
 void GPUSolver::updateHessians(float* hessians, float* step, const int nParams){
     update_hessians(hessians, step, nParams);
 }
+
+void copyParams(float *dest_Params, const float *src_params, const int nParams){
+    // TODO: verify copy-kernel vs cudaMemcpyDeviceToDevice performance (Time)
+    // According to documentation, cudaMemcpyDeviceToDevice is generally preferable over a copu kernel
+    /**
+     * Tested on GeForce GTX960,
+     * see https://stackoverflow.com/questions/22345391/cuda-device-memory-copies-cudamemcpydevicetodevice-vs-copy-kernel
+     *
+     * N           cudaMemcpyDeviceToDevice           copy kernel
+     * 1000        0.0075                             0.029
+     * 10000       0.0078                             0.072
+     * 100000      0.019                              0.068
+     * 1000000     0.20                               0.22
+     */
+    CUDA_CHECK(cudaMemcpy(&dest_Params, src_params, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+}
+
+/**
+ * Updates params, p_1 = p_0 + delta
+ * @param params
+ * @param newDelta
+ * @param nParams
+ */
+void updateParams(float* params, const float* newDelta, const int nParams){
+    //TODO: update_parameters(params, newDelta, nParams)
+}

@@ -49,6 +49,7 @@ Status Solver::solve() {
                 break;
             }
 
+            // TODO: use continually updated params + delta or best fitted params + delta
             updateParams(paramBlock->getParameters(), paramBlock->getDeltaParameters(), paramBlock->numParameters());
         }
 
@@ -69,8 +70,8 @@ Status Solver::solve() {
         if (good_step) {
             //Evaluate Jacobians during next iteration
             for (ParameterBlock::Ptr paramBlock : paramBlocks) {
-                updateFitParams(paramBlock->getResultParameters(),
-                                paramBlock->getParameters(), paramBlock->numParameters());
+                copyParams(paramBlock->getResultParameters(),
+                           paramBlock->getParameters(), paramBlock->numParameters());
             }
 
             error = newError;

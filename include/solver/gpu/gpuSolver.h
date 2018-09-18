@@ -38,13 +38,9 @@ namespace telef::solver {
             //TODO: implement
         }
 
-        virtual void updateParams(float* params, const float* newDelta, const int nParams){
-            //TODO: implement
-        }
+        virtual void updateParams(float* params, const float* newDelta, const int nParams);
 
-        virtual void updateFitParams(float* fitParams, const float* params, const int nParams){
-            //TODO: implement
-        }
+        virtual void copyParams(float *dest_Params, const float *src_params, const int nParams);
 
         // Step Functions
         virtual void updateHessians(float* hessians, float* step, const int nParams);

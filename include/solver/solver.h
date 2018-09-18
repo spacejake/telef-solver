@@ -71,7 +71,7 @@ namespace telef::solver {
                                  const int nRes, const int nParams) = 0;
 
         virtual void updateParams(float* params, const float* newDelta, const int nParams) = 0;
-        virtual void updateFitParams(float* fitParams, const float* params, const int nParams) = 0;
+        virtual void copyParams(float *dest_Params, const float *src_params, const int nParams) = 0;
 
         // Step Functions
         virtual void updateHessians(float* hessians, float* step, const int nParams) = 0;
