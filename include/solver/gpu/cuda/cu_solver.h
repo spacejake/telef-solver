@@ -21,3 +21,8 @@ __global__
 void _update_hessians(float* hessians, float* step, int nParams);
 
 void update_hessians(float* hessians, float* step, int nParams);
+
+__global__
+void _update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams);
+
+void update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams);

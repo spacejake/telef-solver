@@ -66,12 +66,12 @@ void calc_error(float* error, const float* residuals, const int nRes){
 
 __global__
 void _cuda_step_down(float* step, float* lambda, const float* factor){
-    printf("update lambda: %.3f * %.3f = ", lambda[0], factor[0]);
+//    printf("update lambda: %.3f * %.3f = ", lambda[0], factor[0]);
     lambda[0] *= factor[0];
-    printf("%.3f\n", lambda[0]);
+//    printf("%.3f\n", lambda[0]);
 
     step[0] = 1 + lambda[0];
-    printf("step down: 1 + %.3f = %.3f\n", lambda[0], step[0]);
+//    printf("step down: 1 + %.3f = %.3f\n", lambda[0], step[0]);
 }
 
 /* stepdown (lambda*down)
@@ -90,8 +90,8 @@ void _cuda_step_up(float* step, float* lambda, const float* factor){
     float newLambda = lambda[0] * factor[0];
     step[0] = (1 + newLambda) / (1 + lambda[0]);
 
-    printf("update lambda: %.3f * %.3f = %.3f\n", lambda[0], factor[0], newLambda);
-    printf("step up: (1 + %.3f) / (1 + %.3f) = %.3f\n", newLambda, lambda[0], step[0]);
+//    printf("update lambda: %.3f * %.3f = %.3f\n", lambda[0], factor[0], newLambda);
+//    printf("step up: (1 + %.3f) / (1 + %.3f) = %.3f\n", newLambda, lambda[0], step[0]);
 
     lambda[0] = newLambda;
 }
@@ -109,7 +109,7 @@ void _update_hessians(float* hessians, float* step, int nParams){
     for (int i = start_index; i < nParams; i += stride) {
         // Apply step down diagonal
         hessians[i+nParams*i] *= step[0];
-        printf("hessians[%d][%d]: %.4f\n",i, i, hessians[i+nParams*i]);
+//        printf("hessians[%d][%d]: %.4f\n",i, i, hessians[i+nParams*i]);
     }
 }
 
@@ -118,4 +118,24 @@ void update_hessians(float* hessians, float* step, int nParams){
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _update_hessians << < dimGrid, dimBlock >> >(hessians, step, nParams);
+}
+
+__global__
+void _update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams){
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    // grid-striding loop
+    for (int i = start_index; i < nParams; i += stride) {
+        // Apply step down diagonal
+        newParams[i] += params[i] + newDelta[i];
+//        printf("params[%d][%d]: %.4f\n",i, i, newParams[i]);
+    }
+}
+
+void update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams){
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
 }

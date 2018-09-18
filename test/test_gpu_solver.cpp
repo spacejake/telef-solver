@@ -159,4 +159,38 @@ TEST(GPUSolverTest_cuda, updateHessian) {
     float ferr = 1e-3;
     EXPECT_THAT(hessian,
                 Pointwise(FloatNear(ferr), real_update_hessian));
+
+    cudaFree(hessian_d);
+    cudaFree(step_d);
+}
+
+
+TEST(GPUSolverTest_cuda, updateParams) {
+    float params[] = {0.5,  0.5, 0.5, 0.5};
+    float paramsDelta[] = {0.42934,  0.6941, 0.6941, 0.684};
+    float newParams[4];
+    int nParams = 4;
+
+    float *params_d;
+    float *deltaParams_d;
+    float *newParams_d;
+
+    utils::CUDA_ALLOC_AND_COPY(&params_d, params, static_cast<size_t>(nParams));
+    utils::CUDA_ALLOC_AND_COPY(&deltaParams_d, paramsDelta, static_cast<size_t>(nParams));
+    utils::CUDA_MALLOC(&newParams_d, static_cast<size_t>(nParams));
+
+    update_parameters(newParams_d, params_d, deltaParams_d, nParams);
+
+    cudaMemcpy(newParams, newParams_d, nParams*sizeof(float), cudaMemcpyDeviceToHost);
+
+    float real_new_params[] = {0.92934, 1.1941, 1.1941, 1.184};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(newParams,
+                Pointwise(FloatNear(ferr), real_new_params));
+
+
+    cudaFree(params_d);
+    cudaFree(newParams_d);
+    cudaFree(deltaParams_d);
 }

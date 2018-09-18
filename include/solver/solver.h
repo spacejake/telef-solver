@@ -70,8 +70,8 @@ namespace telef::solver {
                                  const float* hessians, const float* gradients,
                                  const int nRes, const int nParams) = 0;
 
-        virtual void updateParams(float* params, const float* newDelta, const int nParams) = 0;
-        virtual void copyParams(float *dest_Params, const float *src_params, const int nParams) = 0;
+        virtual void updateParams(float* newParams, const float* params, const float* newDelta, const int nParams) = 0;
+        virtual void copyParams(float *destParams, const float *srcParams, const int nParams) = 0;
 
         // Step Functions
         virtual void updateHessians(float* hessians, float* step, const int nParams) = 0;

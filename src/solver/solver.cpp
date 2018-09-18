@@ -49,8 +49,9 @@ Status Solver::solve() {
                 break;
             }
 
-            // TODO: use continually updated params + delta or best fitted params + delta
-            updateParams(paramBlock->getParameters(), paramBlock->getDeltaParameters(), paramBlock->numParameters());
+            // TODO: new params = best fit/guess params + delta
+            updateParams(paramBlock->getParameters(), paramBlock->getResultParameters(),
+                         paramBlock->getDeltaParameters(), paramBlock->numParameters());
         }
 
         float newError = 0;
