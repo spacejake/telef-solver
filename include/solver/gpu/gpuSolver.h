@@ -29,7 +29,6 @@ namespace telef::solver {
 
         virtual void initialize_solver();
 
-        // TODO: Store & destroy computed Step, Should be stored in param block???? probably since need 1 per param block
         virtual float calcError(const float* residuals, const int nRes);
 
         virtual bool solveSystem(float *deltaParams,
