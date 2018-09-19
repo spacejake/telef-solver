@@ -1,5 +1,7 @@
 
 #include <stdio.h>
+#include <assert.h>
+
 #include <cuda_runtime.h>
 //#include <cooperative_groups.h>
 #include <cublas_v2.h>
@@ -8,7 +10,9 @@
 
 #include "solver/gpu/cuda/cu_solver.h"
 
-//using namespace cooperative_groups;
+//#include "util/cudautil.h"
+
+//using namespace telef::solver::utils;
 
 #define BLOCKSIZE 128
 
@@ -138,4 +142,72 @@ void update_parameters(float* newParams, const float* params, const float* newDe
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
+}
+
+/**
+ * This function takes a symmetric, positive-definite matrix "matA" and overwrites
+ * the the lower half of "matA" with the lower-triangular Cholesky factor l for A = L * LH form.
+ * Elements above the diagonal of "matA" are neither used nor modified. The decomposition is performed in place.
+ *
+ * @param solver_handle
+ * @param cublas_handle
+ * @param matA, matrix of size nxn
+ * @param n, size of nxn matrix "matA"
+ * @return true if matrix is positive-definite, otherwise false
+ */
+bool decompose_cholesky(cusolverDnHandle_t solver_handle, cublasHandle_t cublas_handle,
+                        float* matA, const int n ){
+    bool decomp_status = true;
+    int lda = n;
+    const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+
+    int *info_d = NULL; // info in gpu (device copy)
+//    CUDA_MALLOC(&info_d, static_cast<size_t>(1));
+    cudaMalloc((void**)&info_d, sizeof(int));
+
+    int buffer_size = 0;
+    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
+
+    // Allocate working space for decomposition
+    cusolver_status =
+            cusolverDnSpotrf_bufferSize(solver_handle, uplo,
+                                        n, matA, lda,
+                                        &buffer_size);
+
+    // Should not happen, if it does bad stuff man...
+    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+
+    float *buffer_d;
+//    CUDA_MALLOC(&buffer_d, static_cast<size_t>(buffer_size));
+    cudaMalloc((void**)&buffer_d, buffer_size * sizeof(float));
+
+    // Compute A = L*LH, result in matA in lower triangular form
+    cusolver_status =
+            cusolverDnSpotrf(solver_handle, uplo,
+                             n, matA, lda,
+                             buffer_d, buffer_size,
+                             info_d );
+
+    if (CUSOLVER_STATUS_SUCCESS != cusolver_status) {
+        printf("cusolverDnSpotrf failed: status %d", cusolver_status);
+        decomp_status = false;
+    }
+
+    int info_h;
+//    CUDA_CHECK(cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost));
+    cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost);
+
+    if ( 0 != info_h ){
+        fprintf(stderr, "Error: Cholesky factorization failed\n");
+        if ( 0 > info_h ){
+            printf("%d-th parameter is wrong \n", -info_h);
+        }
+        decomp_status = false;
+    }
+
+    // free resources
+    if (info_d) cudaFree(info_d);
+    if (buffer_d ) cudaFree(buffer_d);
+
+    return decomp_status;
 }

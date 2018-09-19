@@ -7,6 +7,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cublas_v2.h>
+#include <cusolver_common.h>
+#include <cusolverDn.h>
+
 #include "solver/gpu/gpuResidualFunction.h"
 
 #include "util/cudautil.h"
@@ -193,4 +197,38 @@ TEST(GPUSolverTest_cuda, updateParams) {
     cudaFree(params_d);
     cudaFree(newParams_d);
     cudaFree(deltaParams_d);
+}
+
+TEST(GPUSolverTest_cuda, CholeskyDecompseHessian) {
+    // --- CUDA solver initialization
+    cusolverDnHandle_t solver_handle;
+    cusolverDnCreate(&solver_handle);
+
+    // --- CUBLAS initialization
+    cublasHandle_t cublas_handle;
+    cublasCreate(&cublas_handle);
+
+    float hessian[] = {8.05333,  20.6941,
+                       20.6941, 175.7889};
+    float *hessian_d;
+    float *step_d;
+    int nParams = 2;
+
+    utils::CUDA_ALLOC_AND_COPY(&hessian_d, hessian, static_cast<size_t >(nParams*nParams));
+    decompose_cholesky(solver_handle, cublas_handle, hessian_d, nParams);
+
+    cudaMemcpy(hessian, hessian_d, nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Column-order lower triangular matric, upper left unchanged.
+    float real_decomposed[] = {2.83784, 7.2922,
+                               20.6941, 11.0731};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(hessian,
+                Pointwise(FloatNear(ferr), real_decomposed));
+
+    cudaFree(hessian_d);
+
+    if (solver_handle) cusolverDnDestroy(solver_handle);
+    if (cublas_handle ) cublasDestroy(cublas_handle);
 }

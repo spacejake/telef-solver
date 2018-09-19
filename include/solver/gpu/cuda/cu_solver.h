@@ -2,6 +2,7 @@
 
 #include <cuda_runtime_api.h>
 
+
 __global__
 void _calc_error(float* error, const float* residuals, const int nRes);
 
@@ -26,3 +27,6 @@ __global__
 void _update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams);
 
 void update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams);
+
+bool decompose_cholesky(cusolverDnHandle_t solver_handle, cublasHandle_t cublas_handle,
+                        float* hessians, const int nParams);

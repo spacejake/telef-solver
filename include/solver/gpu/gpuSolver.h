@@ -33,9 +33,7 @@ namespace telef::solver {
 
         virtual bool solveSystem(float *deltaParams,
                                  const float* hessians, const float* gradients,
-                                 const int nRes, const int nParams){
-            //TODO: implement using cuslover for Dense matrices cusolverDnCgesvd and cusolverDnCsytrf or cusolverDnCgeqrf
-        }
+                                 const int nRes, const int nParams);
 
         virtual void updateParams(float* newParams, const float* params, const float* newDelta, const int nParams);
 

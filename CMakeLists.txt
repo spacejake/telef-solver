@@ -72,8 +72,7 @@ set( cudaHdr
         include/solver/gpu/cuda/cu_solver.h
 )
 
-set( cudaHdr
-        include/util/cudautil.h
+set( cudaSrc
         src/solver/gpu/cuda/cu_residual.cu
         src/solver/gpu/cuda/cu_solver.cu
 )
@@ -98,6 +97,8 @@ add_library(${PROJECT_NAME}
 
         # GPU Solver
         ${gpuSrc}
+
+        ${cudaSrc}
         )
 
 set_target_properties(${PROJECT_NAME}
@@ -116,9 +117,11 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC ${CUDA_INCLUDE_DIRS}
         PUBLIC ${CMAKE_SOURCE_DIR}/include/
         PUBLIC /usr/local/include )
+
 target_link_libraries(${PROJECT_NAME}
             ${CUDA_LIBRARIES}
             -lcublas
+            -lcusolver
         )
 
 ###### INSTALL ######

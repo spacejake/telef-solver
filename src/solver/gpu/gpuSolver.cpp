@@ -1,3 +1,8 @@
+
+#include <cublas_v2.h>
+#include <cusolver_common.h>
+#include <cusolverDn.h>
+
 #include "solver/gpu/cuda/cu_solver.h"
 
 #include "util/cudautil.h"
@@ -79,4 +84,22 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
      * 1000000     0.20                               0.22
      */
     CUDA_CHECK(cudaMemcpy(&destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+}
+
+bool GPUSolver::solveSystem(float *deltaParams,
+                         const float* hessians, const float* gradients,
+                         const int nRes, const int nParams){
+    //TODO: implement using cuslover for Dense matrices cusolverDnCgesvd and cusolverDnCsytrf or cusolverDnCgeqrf
+
+    // --- CUDA solver initialization
+    cusolverDnHandle_t solver_handle;
+    cusolverDnCreate(&solver_handle);
+
+    // --- CUBLAS initialization
+    cublasHandle_t cublas_handle;
+    cublasCreate(&cublas_handle);
+
+    //decompose_cholesky(solver_handle, cublas_handle, decomposed_lt, hessians, nParams);
+    //solve_system_cholesky(solver_handle, cublas_handle, decomposed_ut, hessians, nParams);
+    return false;
 }
