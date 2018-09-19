@@ -155,8 +155,7 @@ void update_parameters(float* newParams, const float* params, const float* newDe
  * @param n, size of nxn matrix "matA"
  * @return true if matrix is positive-definite, otherwise false
  */
-bool decompose_cholesky(cusolverDnHandle_t solver_handle, cublasHandle_t cublas_handle,
-                        float* matA, const int n ){
+bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int n ){
     bool decomp_status = true;
     int lda = n;
     const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
@@ -169,6 +168,7 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, cublasHandle_t cublas_
     cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 
     // Allocate working space for decomposition
+    // TODO: Allocate working space once in parameterBlock
     cusolver_status =
             cusolverDnSpotrf_bufferSize(solver_handle, uplo,
                                         n, matA, lda,
@@ -210,4 +210,40 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, cublasHandle_t cublas_
     if (buffer_d ) cudaFree(buffer_d);
 
     return decomp_status;
+}
+
+
+void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float* matB, int n){
+    int lda = n;
+    int nCols_B = 1;
+
+    const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+
+    int *info_d = NULL; // info in gpu (device copy)
+//    CUDA_MALLOC(&info_d, static_cast<size_t>(1));
+    cudaMalloc((void**)&info_d, sizeof(int));
+
+    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
+
+    // Compute A = L*LH, result in matA in lower triangular form
+    cusolver_status =
+            cusolverDnSpotrs(solver_handle, uplo,
+                             n, nCols_B, matA, lda, matB, n,
+                             info_d );
+
+    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+
+    int info_h;
+//    CUDA_CHECK(cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost));
+    cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost);
+
+    if ( 0 != info_h ){
+        fprintf(stderr, "Error: Cholesky Solver failed\n");
+        if ( 0 > info_h ){
+            printf("%d-th parameter is wrong \n", -info_h);
+        }
+    }
+
+    // free resources
+    if (info_d) cudaFree(info_d);
 }

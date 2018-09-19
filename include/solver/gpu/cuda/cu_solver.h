@@ -28,5 +28,8 @@ void _update_parameters(float* newParams, const float* params, const float* newD
 
 void update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams);
 
-bool decompose_cholesky(cusolverDnHandle_t solver_handle, cublasHandle_t cublas_handle,
-                        float* hessians, const int nParams);
+bool decompose_cholesky(cusolverDnHandle_t solver_handle,
+                        float* matA, const int n);
+
+
+void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float* matB, int n);

@@ -204,18 +204,17 @@ TEST(GPUSolverTest_cuda, CholeskyDecompseHessian) {
     cusolverDnHandle_t solver_handle;
     cusolverDnCreate(&solver_handle);
 
-    // --- CUBLAS initialization
-    cublasHandle_t cublas_handle;
-    cublasCreate(&cublas_handle);
+//    // --- CUBLAS initialization
+//    cublasHandle_t cublas_handle;
+//    cublasCreate(&cublas_handle);
 
     float hessian[] = {8.05333,  20.6941,
                        20.6941, 175.7889};
     float *hessian_d;
-    float *step_d;
     int nParams = 2;
 
     utils::CUDA_ALLOC_AND_COPY(&hessian_d, hessian, static_cast<size_t >(nParams*nParams));
-    decompose_cholesky(solver_handle, cublas_handle, hessian_d, nParams);
+    decompose_cholesky(solver_handle, hessian_d, nParams);
 
     cudaMemcpy(hessian, hessian_d, nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -230,5 +229,41 @@ TEST(GPUSolverTest_cuda, CholeskyDecompseHessian) {
     cudaFree(hessian_d);
 
     if (solver_handle) cusolverDnDestroy(solver_handle);
-    if (cublas_handle ) cublasDestroy(cublas_handle);
+}
+
+TEST(GPUSolverTest_cuda, CholeskySolve) {
+    // --- CUDA solver initialization
+    cusolverDnHandle_t solver_handle;
+    cusolverDnCreate(&solver_handle);
+
+//    // --- CUBLAS initialization
+//    cublasHandle_t cublas_handle;
+//    cublasCreate(&cublas_handle);
+
+    float gradiants[] = {20.0488, 93.6692};
+    float decomposed_hessian[] = {2.83784, 7.2922,
+                                  20.6941, 11.0731};
+    float *paramsDelta_d;
+    float *decomposed_hessian_d;
+    int nParams = 2;
+
+    utils::CUDA_ALLOC_AND_COPY(&paramsDelta_d, gradiants, static_cast<size_t >(nParams));
+    utils::CUDA_ALLOC_AND_COPY(&decomposed_hessian_d, decomposed_hessian, static_cast<size_t >(nParams*nParams));
+    solve_system_cholesky(solver_handle, decomposed_hessian_d, paramsDelta_d, nParams);
+
+    float paramsDelta[2];
+    cudaMemcpy(paramsDelta, paramsDelta_d, nParams*sizeof(float), cudaMemcpyDeviceToHost);
+
+
+    // Column-order lower triangular matric, upper left unchanged.
+    float real_deltas[] = {1.60613, 0.343773};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(paramsDelta,
+                Pointwise(FloatNear(ferr), real_deltas));
+
+    cudaFree(paramsDelta_d);
+    cudaFree(decomposed_hessian_d);
+
+    if (solver_handle) cusolverDnDestroy(solver_handle);
 }
