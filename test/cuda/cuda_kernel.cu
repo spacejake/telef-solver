@@ -62,6 +62,7 @@ void calc_res0(float *residuals, const float *params, const float *measurements,
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_res0 << < dimGrid, dimBlock >> > (residuals, params, measurements, nRes, nParams);
+    cudaDeviceSynchronize();
 }
 
 __global__
@@ -97,4 +98,5 @@ void calc_jacobi0(float *jacobians, const float *params, const int nRes, const i
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_jacobi0 << < dimGrid, dimBlock >> > (jacobians, params, nRes, nParams);
+    cudaDeviceSynchronize();
 }
