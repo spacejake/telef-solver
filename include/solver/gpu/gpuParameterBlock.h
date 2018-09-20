@@ -11,20 +11,12 @@ namespace telef::solver {
         using ConstPtr = std::shared_ptr<const GPUParameterBlock>;
 
         GPUParameterBlock(const int nRes, const int nParams) : ParameterBlock(nRes, nParams){
-//            printf("ParamBlock with Res:%d and Params:%d\n", nRes, nParams);
-            utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(nParams));
-            utils::CUDA_ALLOC_AND_ZERO(&resultParameters, static_cast<size_t>(nParams));
-            utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nParams));
-
-            utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(nParams * nRes));
-            utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nParams));
-            utils::CUDA_ALLOC_AND_ZERO(&hessians, static_cast<size_t>(nParams * nParams));
-            utils::CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nParams * nParams));
+            initDeviceMemory();
         }
 
         virtual ~GPUParameterBlock(){
+            utils::CUDA_FREE(workingParameters);
             utils::CUDA_FREE(parameters);
-            utils::CUDA_FREE(resultParameters);
             utils::CUDA_FREE(deltaParams);
 
             utils::CUDA_FREE(jacobians);
@@ -33,12 +25,28 @@ namespace telef::solver {
             utils::CUDA_FREE(hessianLowTri);
         }
 
-        virtual float* getParameters(){
-            return parameters;
+
+        virtual void setInitialParams(float* initialParams_) {
+            resultParameters = initialParams_;
+            initializeParameters();
         }
 
-        virtual float* getResultParameters(){
+        virtual void initializeParameters(){
+            cudaMemcpy(workingParameters, resultParameters, nParameters*sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(parameters, workingParameters,nParameters*sizeof(float), cudaMemcpyDeviceToDevice);
+        }
+
+        virtual float* getResultParameters() {
+            cudaMemcpy(resultParameters, parameters, nParameters*sizeof(float), cudaMemcpyDeviceToHost);
             return resultParameters;
+        };
+
+        virtual float* getWorkingParameters(){
+            return workingParameters;
+        }
+
+        virtual float* getParameters(){
+            return parameters;
         }
 
         virtual float* getDeltaParameters(){
@@ -62,13 +70,26 @@ namespace telef::solver {
         }
 
     private:
+        float* workingParameters;
         float* parameters;
-        float* resultParameters;
         float* deltaParams;
 
         float* jacobians;
         float* gradients;
         float* hessians;
         float* hessianLowTri;
+
+    private:
+        void initDeviceMemory(){
+//            printf("ParamBlock with Res:%d and Params:%d\n", nRes, nParams);
+            utils::CUDA_ALLOC_AND_ZERO(&workingParameters, static_cast<size_t>(numParameters()));
+            utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(numParameters()));
+            utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(numParameters()));
+
+            utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(numParameters() * numResiduals()));
+            utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(numParameters()));
+            utils::CUDA_ALLOC_AND_ZERO(&hessians, static_cast<size_t>(numParameters() * numParameters()));
+            utils::CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(numParameters() * numParameters()));
+        }
     };
 }

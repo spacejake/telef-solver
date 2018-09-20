@@ -5,6 +5,7 @@
 
 namespace telef::solver {
 
+
     enum class Status {
         UNKNOWN,
         RUNNING,
@@ -25,6 +26,8 @@ namespace telef::solver {
 
     class Solver {
     public:
+        using Ptr = std::shared_ptr<Solver>;
+        using ConstPtr = std::shared_ptr<const Solver>;
         Options options;
 
         Solver(){
@@ -41,17 +44,23 @@ namespace telef::solver {
         virtual ~Solver(){};
 
         void addResidualFunction(ResidualFunction::Ptr resFunc_,
-                                 std::vector<float*> initialParams_){
+                                 const std::vector<float*> &params_){
+            resFunc_->setInitialParams(params_);
             residualFuncs.push_back(resFunc_);
-
         }
 
-        // Result can be obtained via the given ParameterBlocks.getResultParameters(),
+
+        const std::vector<ResidualFunction::Ptr>& getResidualFunction() {
+            return residualFuncs;
+        }
+
+        // Result can be obtained via the given ParameterBlocks.getParameters(),
         // the user gives the solver the working memory space
         Status solve();
     protected:
 
         virtual void initialize_solver() = 0;
+        virtual void finalize_result() = 0;
 
         /****Interface to be implemented for CPU and GPU implementations****/
         /**

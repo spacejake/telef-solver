@@ -21,7 +21,7 @@ namespace telef::solver {
          * @param nRes
          * @param nParamsList
          */
-        GPUResidualBlock(const int nRes, const std::vector<int> nParamsList): ResidualBlock(nRes) {
+        GPUResidualBlock(const int nRes, const std::vector<int>& nParamsList): ResidualBlock(nRes) {
             initialize(nRes);
             initializeParams(nRes, nParamsList);
         }
@@ -55,7 +55,7 @@ namespace telef::solver {
             utils::CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
         }
 
-        void initializeParams(const int& nRes, const std::vector<int> nParamsList){
+        void initializeParams(const int& nRes, const std::vector<int>& nParamsList){
             for(int nParams : nParamsList){
                 GPUParameterBlock::Ptr paramObj = std::make_shared<GPUParameterBlock>(nRes, nParams);
                 parameterBlocks.push_back(paramObj);

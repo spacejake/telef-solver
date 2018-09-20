@@ -70,6 +70,7 @@ void calc_error(float* error, const float* residuals, const int nRes){
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_error << < dimGrid, dimBlock >> >(error, residuals, nRes);
+    cudaDeviceSynchronize();
 }
 
 __global__
@@ -87,6 +88,7 @@ void _cuda_step_down(float* step, float* lambda, const float* factor){
 */
 void cuda_step_down(float* step, float* lambda, const float* factor){
     _cuda_step_down << < 1, 1 >> >(step, lambda, factor);
+    cudaDeviceSynchronize();
 }
 
 /*
@@ -106,6 +108,7 @@ void _cuda_step_up(float* step, float* lambda, const float* factor){
 
 void cuda_step_up(float* step, float* lambda, const float* factor){
     _cuda_step_up << < 1, 1 >> >(step, lambda, factor);
+    cudaDeviceSynchronize();
 }
 
 __global__
@@ -126,6 +129,7 @@ void update_hessians(float* hessians, float* step, int nParams){
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _update_hessians << < dimGrid, dimBlock >> >(hessians, step, nParams);
+    cudaDeviceSynchronize();
 }
 
 __global__
@@ -146,6 +150,7 @@ void update_parameters(float* newParams, const float* params, const float* newDe
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
+    cudaDeviceSynchronize();
 }
 
 /**

@@ -16,10 +16,24 @@
 #include "util/cudautil.h"
 #include "cuda/cuda_kernel.h"
 #include "solver/gpu/cuda/cu_solver.h"
+#include "mock_gpu.h"
 
 using namespace std;
 using namespace telef::solver;
 using namespace testing;
+
+TEST_F(GPUSolverTest, solve2) {
+    solver->options.max_iterations = 12;
+
+    Status  status = solver->solve();
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    vector<float> real_fit_params = {-2.60216,
+                                     0.0318891};
+    float ferr = 1e-3;
+    EXPECT_THAT(params,
+                Pointwise(FloatNear(ferr), real_fit_params));
+}
 
 TEST(GPUSolverTest_cuda, calcError) {
 

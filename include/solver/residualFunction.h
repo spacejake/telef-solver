@@ -36,6 +36,9 @@ namespace telef::solver {
             return residualBlock;
         }
 
+        void setInitialParams(const std::vector<float*> & initialParams_){
+            residualBlock->setInitialParams(initialParams_);
+        }
 
     protected:
         CostFunction::Ptr costFunction;

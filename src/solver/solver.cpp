@@ -50,7 +50,7 @@ Status Solver::solve() {
                 break;
             }
 
-            updateParams(paramBlock->getParameters(), paramBlock->getResultParameters(),
+            updateParams(paramBlock->getWorkingParameters(), paramBlock->getParameters(),
                          paramBlock->getDeltaParameters(), paramBlock->numParameters());
         }
 
@@ -71,8 +71,8 @@ Status Solver::solve() {
         if (good_step) {
             //Evaluate Jacobians during next iteration
             for (ParameterBlock::Ptr paramBlock : paramBlocks) {
-                copyParams(paramBlock->getResultParameters(),
-                           paramBlock->getParameters(), paramBlock->numParameters());
+                copyParams(paramBlock->getParameters(),
+                           paramBlock->getWorkingParameters(), paramBlock->numParameters());
             }
 
             error = newError;
@@ -97,8 +97,13 @@ Status Solver::solve() {
         }
     }
 
+    finalize_result();
+
     if (iter == options.max_iterations) {
         status = Status::MAX_ITERATIONS;
+    } else if (Status::CONVERGENCE !=status) {
+        // TODO: when to consider convergence failed, when inner loop iteration is too large?
+        status = Status::CONVERGENCE_FAILED;
     }
 
     return status;

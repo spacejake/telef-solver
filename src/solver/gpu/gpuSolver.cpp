@@ -19,7 +19,7 @@ float GPUSolver::calcError(const float* residuals, const int nRes) {
 }
 
 
-void GPUSolver::initialize_solver(){
+void GPUSolver::initialize_solver() {
 
     // Initialize step factors
     float downFactor = 1 / options.step_down;
@@ -29,15 +29,18 @@ void GPUSolver::initialize_solver(){
     float inital_step = 1 + options.lambda_initial;
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
         // Iitialize step values
-        float* lambda = resFunc->getResidualBlock()->getLambda();
-        float* step = resFunc->getResidualBlock()->getStep();
+        auto resBlock = resFunc->getResidualBlock();
+        float* lambda =resBlock->getLambda();
+        float* step = resBlock->getStep();
 
         CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(step, &inital_step, sizeof(float), cudaMemcpyHostToDevice));
 
-        //TODO: Initialize Parameters
-        // Initilaize Parameters
-        // Copy Parameters to Result Parameters
+        //TODO: Initialize Parameters in init step, currently in setInitialParams
+        //      This is so CPU? and GPU implementations can copy parameters to working params or on to GPU
+//        for(auto paramBlock : resBlock->getParameterBlocks()) {
+//            paramBlock->initializeParameters();
+//        }
 
         //TODO: Initialize errors, one per residual block
     }
@@ -46,7 +49,17 @@ void GPUSolver::initialize_solver(){
     CUDA_CHECK(cudaMemset(error_d, 0, sizeof(float)));
 }
 
-void GPUSolver::stepUp(float* step, float* lambda){
+void GPUSolver::finalize_result() {
+    for(auto resFunc : residualFuncs) {
+        auto resBlock = resFunc->getResidualBlock();
+        for(auto paramBlock : resBlock->getParameterBlocks()){
+            // Copys Results from GPU onto CPU into user maintained parameter array.
+            paramBlock->getResultParameters();
+        }
+    }
+}
+
+void GPUSolver::stepUp(float* step, float* lambda) {
     cuda_step_up(step, lambda, up_factor_d);
 }
 
@@ -65,11 +78,11 @@ void GPUSolver::updateHessians(float* hessians, float* step, const int nParams){
  * @param newDelta
  * @param nParams
  */
-void GPUSolver::updateParams(float* newParams, const float* params, const float* newDelta, const int nParams){
+void GPUSolver::updateParams(float* newParams, const float* params, const float* newDelta, const int nParams) {
     update_parameters(newParams, params, newDelta, nParams);
 }
 
-void GPUSolver::copyParams(float *destParams, const float *srcParams, const int nParams){
+void GPUSolver::copyParams(float *destParams, const float *srcParams, const int nParams) {
     // TODO: verify copy-kernel vs cudaMemcpyDeviceToDevice performance (Time)
     // According to documentation, cudaMemcpyDeviceToDevice is generally preferable over a copu kernel
     /**

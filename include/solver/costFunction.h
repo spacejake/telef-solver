@@ -16,6 +16,9 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<CostFunction>;
         using ConstPtr = std::shared_ptr<const CostFunction>;
 
+        //TODO: Should we give number of residuals/params for validation(assert) ResidualBlock and cost match up???
+        //      I see this as benificial incase there is a mistake since both are independant of one another.
+        //      Alothough it could be done in the evaluate function too?
         CostFunction(){}
 
         virtual ~CostFunction() {}

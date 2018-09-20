@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cusolver_common.h>
+#include <cusolverDn.h>
 #include "util/cudautil.h"
 
 #include "solver/solver.h"
@@ -8,6 +9,8 @@
 namespace telef::solver {
     class GPUSolver : public Solver {
     public:
+        using Ptr = std::shared_ptr<GPUSolver>;
+        using ConstPtr = std::shared_ptr<const GPUSolver>;
         //TODO: Add params for Cublas handler. What does Cusolver need?
         GPUSolver():Solver(){
             initHandlers();
@@ -34,6 +37,8 @@ namespace telef::solver {
         cusolverDnHandle_t solver_handle;
 
         virtual void initialize_solver();
+
+        virtual void finalize_result();
 
         virtual float calcError(const float* residuals, const int nRes);
 

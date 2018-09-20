@@ -38,6 +38,14 @@ namespace telef::solver {
             return parameterBlocks;
         }
 
+        void setInitialParams(const std::vector<float*> &initialParams_){
+            assert(initialParams_.size() == parameterBlocks.size());
+
+            for (int idx = 0; idx < parameterBlocks.size(); idx++) {
+                parameterBlocks[idx]->setInitialParams(initialParams_[idx]);
+            }
+        }
+
     protected:
         int nResiduals;
         std::vector<ParameterBlock::Ptr> parameterBlocks;
