@@ -17,6 +17,7 @@ namespace telef::solver {
         virtual float* getJacobians() = 0;
         virtual float* getGradients() = 0;
         virtual float* getHessians() = 0;
+        virtual float* getHessianLowTri() = 0;
 
         int numParameters() {
             return nParameters;

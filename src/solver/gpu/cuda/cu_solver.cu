@@ -1,6 +1,8 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <chrono>
+#include <iostream>
 
 #include <cuda_runtime.h>
 //#include <cooperative_groups.h>
@@ -13,6 +15,8 @@
 //#include "util/cudautil.h"
 
 //using namespace telef::solver::utils;
+
+using Clock=std::chrono::high_resolution_clock;
 
 #define BLOCKSIZE 128
 
@@ -156,6 +160,8 @@ void update_parameters(float* newParams, const float* params, const float* newDe
  * @return true if matrix is positive-definite, otherwise false
  */
 bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int n ){
+
+//    auto allt1 = Clock::now();
     bool decomp_status = true;
     int lda = n;
     const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
@@ -168,7 +174,8 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
     cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 
     // Allocate working space for decomposition
-    // TODO: Allocate working space once in parameterBlock
+    // TODO: Try Allocate working space once in parameterBlock, or every-time hessian is computed
+    //       as the matrix should not change much
     cusolver_status =
             cusolverDnSpotrf_bufferSize(solver_handle, uplo,
                                         n, matA, lda,
@@ -182,11 +189,15 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
     cudaMalloc((void**)&buffer_d, buffer_size * sizeof(float));
 
     // Compute A = L*LH, result in matA in lower triangular form
+//    auto t1 = Clock::now();
     cusolver_status =
             cusolverDnSpotrf(solver_handle, uplo,
                              n, matA, lda,
                              buffer_d, buffer_size,
                              info_d );
+//    cudaDeviceSynchronize();
+//    auto t2 = Clock::now();
+
 
     if (CUSOLVER_STATUS_SUCCESS != cusolver_status) {
         printf("cusolverDnSpotrf failed: status %d", cusolver_status);
@@ -204,6 +215,13 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
         }
         decomp_status = false;
     }
+//    auto allt2 = Clock::now();
+//    std::cout << "cusolverDnSpotrf Time: "
+//              << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count()
+//              << " nanoseconds" << std::endl;
+//    std::cout << "Total Time: "
+//              << std::chrono::duration_cast<std::chrono::nanoseconds>(allt2 - allt1).count()
+//              << " nanoseconds" << std::endl;
 
     // free resources
     if (info_d) cudaFree(info_d);

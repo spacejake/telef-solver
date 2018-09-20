@@ -34,22 +34,22 @@ Status Solver::solve() {
     for (iter = 0; iter < options.max_iterations; ++iter) {
         bool solveSystemSuccess = false;
         // TODO: Parallelize?
+        // Compute next step for each parameter
         for (ParameterBlock::Ptr paramBlock : paramBlocks) {
             //if good_step, update 1+lambda
             //else, update with (1 + lambda * up) / (1 + lambda)
             updateHessians(paramBlock->getHessians(), resBlock->getStep(), paramBlock->numParameters());
 
             // Check if decompsition results in a symmetric positive-definite matrix
-            solveSystemSuccess = solveSystem(paramBlock->getDeltaParameters(),
-                    paramBlock->getHessians(), paramBlock->getGradients(),
-                    paramBlock->numResiduals(), paramBlock->numParameters());
+            solveSystemSuccess = solveSystem(paramBlock->getDeltaParameters(), paramBlock->getHessianLowTri(),
+                                             paramBlock->getHessians(), paramBlock->getGradients(),
+                                             paramBlock->numParameters());
 
             // Check if decomoposition worked, if not, then iterate again with new step (good_step == false, break;)
             if (!solveSystemSuccess){
                 break;
             }
 
-            // TODO: new params = best fit/guess params + delta
             updateParams(paramBlock->getParameters(), paramBlock->getResultParameters(),
                          paramBlock->getDeltaParameters(), paramBlock->numParameters());
         }
@@ -60,9 +60,9 @@ Status Solver::solve() {
             // if derr < 0, don't do jacobian recalc
             ResidualBlock::Ptr resBlock = resFunc->evaluate(good_step);
 
-            float error = calcError(resBlock->getResiduals(), resBlock->numResiduals());
+            newError = calcError(resBlock->getResiduals(), resBlock->numResiduals());
 
-            float derr = newError - error;
+            derr = newError - error;
             good_step = derr <= 0;
         } else {
             good_step = false;

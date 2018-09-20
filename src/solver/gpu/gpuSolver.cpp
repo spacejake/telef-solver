@@ -1,6 +1,5 @@
 
 #include <cublas_v2.h>
-#include <cusolver_common.h>
 #include <cusolverDn.h>
 
 #include "solver/gpu/cuda/cu_solver.h"
@@ -86,20 +85,22 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
     CUDA_CHECK(cudaMemcpy(&destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 }
 
-bool GPUSolver::solveSystem(float *deltaParams,
-                         const float* hessians, const float* gradients,
-                         const int nRes, const int nParams){
-    //TODO: implement using cuslover for Dense matrices cusolverDnCgesvd and cusolverDnCsytrf or cusolverDnCgeqrf
+bool GPUSolver::solveSystem(float *deltaParams, float* hessianLowTri,
+                            const float* hessians, const float* gradients,
+                            const int nParams){
 
-    // --- CUDA solver initialization
-    cusolverDnHandle_t solver_handle;
-    cusolverDnCreate(&solver_handle);
+    // Copy hessians(A) to hessianLowTri(will be L), since it is inplace decomposition, for A=LL*
+    CUDA_CHECK(cudaMemcpy(&hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 
-    // --- CUBLAS initialization
-    cublasHandle_t cublas_handle;
-    cublasCreate(&cublas_handle);
+    // Copy gradients(x) to deltaParams(will be b), since it shares the same in/out param, for Ax=b
+    CUDA_CHECK(cudaMemcpy(&deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 
-    //decompose_cholesky(solver_handle, cublas_handle, decomposed_lt, hessians, nParams);
-    //solve_system_cholesky(solver_handle, cublas_handle, decomposed_ut, hessians, nParams);
-    return false;
+
+    bool isPosDefMat = decompose_cholesky(solver_handle, hessianLowTri, nParams);
+
+    if (isPosDefMat) {
+        solve_system_cholesky(solver_handle, hessianLowTri, deltaParams, nParams);
+    }
+
+    return isPosDefMat;
 }

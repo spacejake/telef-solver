@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cusolver_common.h>
 #include "util/cudautil.h"
 
 #include "solver/solver.h"
@@ -9,10 +10,12 @@ namespace telef::solver {
     public:
         //TODO: Add params for Cublas handler. What does Cusolver need?
         GPUSolver():Solver(){
+            initHandlers();
             initDeviceMemory();
         }
 
         GPUSolver(Options opts) : Solver(opts) {
+            initHandlers();
             initDeviceMemory();
         }
 
@@ -20,20 +23,23 @@ namespace telef::solver {
             cudaFree(error_d);
             cudaFree(down_factor_d);
             cudaFree(up_factor_d);
+
+            cusolverDnDestroy(solver_handle);
         }
 
     protected:
         float *error_d;
         float *down_factor_d;
         float *up_factor_d;
+        cusolverDnHandle_t solver_handle;
 
         virtual void initialize_solver();
 
         virtual float calcError(const float* residuals, const int nRes);
 
-        virtual bool solveSystem(float *deltaParams,
+        virtual bool solveSystem(float *deltaParams, float* hessianLowTri,
                                  const float* hessians, const float* gradients,
-                                 const int nRes, const int nParams);
+                                 const int nParams);
 
         virtual void updateParams(float* newParams, const float* params, const float* newDelta, const int nParams);
 
@@ -46,6 +52,10 @@ namespace telef::solver {
         virtual void stepDown(float* step, float* lambda);
 
     private:
+        void initHandlers() {
+            cusolverDnCreate(&solver_handle);
+        }
+
         void initDeviceMemory(){
             utils::CUDA_ALLOC_AND_ZERO(&error_d, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&down_factor_d, static_cast<size_t>(1));

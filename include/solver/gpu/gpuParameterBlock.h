@@ -19,6 +19,7 @@ namespace telef::solver {
             utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(nParams * nRes));
             utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nParams));
             utils::CUDA_ALLOC_AND_ZERO(&hessians, static_cast<size_t>(nParams * nParams));
+            utils::CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nParams * nParams));
         }
 
         virtual ~GPUParameterBlock(){
@@ -29,6 +30,7 @@ namespace telef::solver {
             utils::CUDA_FREE(jacobians);
             utils::CUDA_FREE(gradients);
             utils::CUDA_FREE(hessians);
+            utils::CUDA_FREE(hessianLowTri);
         }
 
         virtual float* getParameters(){
@@ -55,6 +57,10 @@ namespace telef::solver {
             return hessians;
         }
 
+        virtual float* getHessianLowTri(){
+            return hessianLowTri;
+        }
+
     private:
         float* parameters;
         float* resultParameters;
@@ -63,5 +69,6 @@ namespace telef::solver {
         float* jacobians;
         float* gradients;
         float* hessians;
+        float* hessianLowTri;
     };
 }

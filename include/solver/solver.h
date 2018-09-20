@@ -66,9 +66,9 @@ namespace telef::solver {
         virtual float calcError(const float* residuals, const int nRes) = 0;
 
 
-        virtual bool solveSystem(float *deltaParams,
+        virtual bool solveSystem(float *deltaParams, float* hessianLowTri,
                                  const float* hessians, const float* gradients,
-                                 const int nRes, const int nParams) = 0;
+                                 const int nParams) = 0;
 
         virtual void updateParams(float* newParams, const float* params, const float* newDelta, const int nParams) = 0;
         virtual void copyParams(float *destParams, const float *srcParams, const int nParams) = 0;
