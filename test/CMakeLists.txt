@@ -24,6 +24,8 @@ set( cudaTestSrc
 
 target_sources(${PROJECT_NAME}
     PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/mock_gpu.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mock_gpu.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.cu"
 )
