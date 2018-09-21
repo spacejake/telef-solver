@@ -27,6 +27,7 @@ void GPUSolver::initialize_solver() {
     cudaMemcpy(up_factor_d, &options.step_up, sizeof(float), cudaMemcpyHostToDevice );
 
     float inital_step = 1 + options.lambda_initial;
+    printf("Initial Step: %.4f\n", inital_step);
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
         // Iitialize step values
         auto resBlock = resFunc->getResidualBlock();
@@ -95,7 +96,7 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
      * 100000      0.019                              0.068
      * 1000000     0.20                               0.22
      */
-    CUDA_CHECK(cudaMemcpy(&destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+    CUDA_CHECK(cudaMemcpy(destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 }
 
 bool GPUSolver::solveSystem(float *deltaParams, float* hessianLowTri,
@@ -103,10 +104,11 @@ bool GPUSolver::solveSystem(float *deltaParams, float* hessianLowTri,
                             const int nParams){
 
     // Copy hessians(A) to hessianLowTri(will be L), since it is inplace decomposition, for A=LL*
-    CUDA_CHECK(cudaMemcpy(&hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+    CUDA_CHECK(cudaMemcpy(hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+//    print_array("InitL:", hessianLowTri, nParams*nParams);
 
     // Copy gradients(x) to deltaParams(will be b), since it shares the same in/out param, for Ax=b
-    CUDA_CHECK(cudaMemcpy(&deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+    CUDA_CHECK(cudaMemcpy(deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 
 
     bool isPosDefMat = decompose_cholesky(solver_handle, hessianLowTri, nParams);

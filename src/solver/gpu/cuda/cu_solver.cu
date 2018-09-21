@@ -20,6 +20,31 @@ using Clock=std::chrono::high_resolution_clock;
 
 #define BLOCKSIZE 128
 
+
+__global__
+void _print_arr(float *arr_d, int n) {
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+
+    // grid-striding loop
+    for (int i = start_index; i < n; i += stride) {
+
+        printf("Element[%d]: %.5f\n", i, arr_d[i]);
+//        arr_d[i] += 1;
+    }
+}
+
+void print_array(const char* msg, float *arr_d, int n) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((n + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    printf("%s:\n", msg);
+    _print_arr << < dimGrid, dimBlock >> > (arr_d, n);
+    cudaDeviceSynchronize();
+    printf("\n");
+}
+
 __inline__ __device__
 float warpReduceSum(float val) {
     for (int offset = warpSize/2; offset > 0; offset /= 2)
@@ -130,6 +155,8 @@ void update_hessians(float* hessians, float* step, int nParams){
 
     _update_hessians << < dimGrid, dimBlock >> >(hessians, step, nParams);
     cudaDeviceSynchronize();
+//    print_array("New Hessian",hessians, nParams*nParams);
+
 }
 
 __global__
@@ -140,8 +167,8 @@ void _update_parameters(float* newParams, const float* params, const float* newD
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
         // Apply step down diagonal
-        newParams[i] += params[i] + newDelta[i];
-//        printf("params[%d][%d]: %.4f\n",i, i, newParams[i]);
+        newParams[i] = params[i] + newDelta[i];
+//        printf("params[%d]: %.4f\n",i, newParams[i]);
     }
 }
 
@@ -200,6 +227,7 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
                              n, matA, lda,
                              buffer_d, buffer_size,
                              info_d );
+//    print_array("L",matA,n*n);
 //    cudaDeviceSynchronize();
 //    auto t2 = Clock::now();
 
@@ -253,6 +281,8 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
             cusolverDnSpotrs(solver_handle, uplo,
                              n, nCols_B, matA, lda, matB, n,
                              info_d );
+
+//    print_array("Deltas",matB,n);
 
     assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
 

@@ -26,6 +26,7 @@ TEST_F(GPUSolverTest, solve2) {
     solver->options.max_iterations = 12;
 
     Status  status = solver->solve();
+
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
     vector<float> real_fit_params = {-2.60216,
@@ -159,7 +160,7 @@ TEST(GPUSolverTest_cuda, stepUp) {
 TEST(GPUSolverTest_cuda, updateHessian) {
     float hessian[] = {4.42934,  20.6941,
                         20.6941, 96.684};
-    float step = 1.81818;
+    float step = 1.1;
     float *hessian_d;
     float *step_d;
     int nParams = 2;
@@ -171,8 +172,8 @@ TEST(GPUSolverTest_cuda, updateHessian) {
 
     cudaMemcpy(hessian, hessian_d, nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
 
-    float real_update_hessian[] = {8.05333,  20.6941,
-                                    20.6941, 175.7889};
+    float real_update_hessian[] = {4.872274,  20.6941,
+                                    20.6941, 106.3524};
 
     float ferr = 1e-3;
     EXPECT_THAT(hessian,
@@ -184,7 +185,7 @@ TEST(GPUSolverTest_cuda, updateHessian) {
 
 
 TEST(GPUSolverTest_cuda, updateParams) {
-    float params[] = {0.5,  0.5, 0.5, 0.5};
+    float params[] = {0.5, 0.5, 0.5, 0.5};
     float paramsDelta[] = {0.42934,  0.6941, 0.6941, 0.684};
     float newParams[4];
     int nParams = 4;
@@ -222,8 +223,8 @@ TEST(GPUSolverTest_cuda, CholeskyDecompseHessian) {
 //    cublasHandle_t cublas_handle;
 //    cublasCreate(&cublas_handle);
 
-    float hessian[] = {8.05333,  20.6941,
-                       20.6941, 175.7889};
+    float hessian[] = {4.872274,  20.6941,
+                       20.6941, 106.3524};
     float *hessian_d;
     int nParams = 2;
 
@@ -233,10 +234,10 @@ TEST(GPUSolverTest_cuda, CholeskyDecompseHessian) {
     cudaMemcpy(hessian, hessian_d, nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
 
     // Column-order lower triangular matric, upper left unchanged.
-    float real_decomposed[] = {2.83784, 7.2922,
-                               20.6941, 11.0731};
+    float real_decomposed[] = {2.20732, 9.37520,
+                               20.6941, 4.29627};
 
-    float ferr = 1e-3;
+    float ferr = 1e-4;
     EXPECT_THAT(hessian,
                 Pointwise(FloatNear(ferr), real_decomposed));
 
@@ -255,8 +256,8 @@ TEST(GPUSolverTest_cuda, CholeskySolve) {
 //    cublasCreate(&cublas_handle);
 
     float gradiants[] = {20.0488, 93.6692};
-    float decomposed_hessian[] = {2.83784, 7.2922,
-                                  20.6941, 11.0731};
+    float decomposed_hessian[] = {2.20732, 9.37520,
+                                  20.6941, 4.29627};
     float *paramsDelta_d;
     float *decomposed_hessian_d;
     int nParams = 2;
@@ -270,9 +271,9 @@ TEST(GPUSolverTest_cuda, CholeskySolve) {
 
 
     // Column-order lower triangular matric, upper left unchanged.
-    float real_deltas[] = {1.60613, 0.343773};
+    float real_deltas[] = {2.1554, 0.461345};
 
-    float ferr = 1e-3;
+    float ferr = 1e-4;
     EXPECT_THAT(paramsDelta,
                 Pointwise(FloatNear(ferr), real_deltas));
 

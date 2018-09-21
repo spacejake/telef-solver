@@ -91,4 +91,9 @@ void GPUSolverTest::SetUp()
     std::vector<float*> initParams = {params.data()};
     solver->addResidualFunction(residualFunc, initParams);
 }
+
+void GPUSolverTest::TearDown() {
+//    cudaDeviceReset();
+}
+
 //GPUSolverTest END

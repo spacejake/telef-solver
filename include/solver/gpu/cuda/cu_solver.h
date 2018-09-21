@@ -3,6 +3,9 @@
 #include <cuda_runtime_api.h>
 
 
+
+void print_array(const char* msg, float *arr_d, int n);
+
 __global__
 void _calc_error(float* error, const float* residuals, const int nRes);
 

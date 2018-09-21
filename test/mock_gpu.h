@@ -38,5 +38,5 @@ public:
     std::vector<float> params;
 
     virtual void SetUp();
-    virtual void TearDown(){}
+    virtual void TearDown();
 };
