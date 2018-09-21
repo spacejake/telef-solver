@@ -86,8 +86,9 @@ void _calc_error(float* error, const float* residuals, const int nRes){
     }
 
     sum = blockReduceSum(sum);
-    if ((threadIdx.x & (warpSize - 1)) == 0)
+    if ((threadIdx.x & (warpSize - 1)) == 0) {
         atomicAdd(error, sum);
+    }
 }
 
 void calc_error(float* error, const float* residuals, const int nRes){
@@ -178,6 +179,7 @@ void update_parameters(float* newParams, const float* params, const float* newDe
 
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
     cudaDeviceSynchronize();
+    print_array("New Params", newParams, nParams);
 }
 
 /**

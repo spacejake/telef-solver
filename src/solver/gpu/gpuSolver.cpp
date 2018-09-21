@@ -12,6 +12,8 @@ using namespace telef::solver;
 float GPUSolver::calcError(const float* residuals, const int nRes) {
     // TODO: Use Residual based error, use error_d as total error for all residuals
     float error = 0;
+    //Reset to 0
+    cudaMemset(error_d,0, sizeof(float));
     calc_error(error_d, residuals, nRes);
 
     cudaMemcpy(&error, error_d, sizeof(float), cudaMemcpyDeviceToHost);

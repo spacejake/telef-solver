@@ -61,7 +61,7 @@ Status Solver::solve() {
             ResidualBlock::Ptr resBlock = resFunc->evaluate(good_step);
 
             newError = calcError(resBlock->getResiduals(), resBlock->numResiduals());
-
+            printf("Error:%.4f\n",newError);
             derr = newError - error;
             good_step = derr <= 0;
         } else {
