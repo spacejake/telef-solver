@@ -19,6 +19,8 @@ namespace telef::solver {
             utils::CUDA_FREE(parameters);
             utils::CUDA_FREE(deltaParams);
 
+            utils::CUDA_FREE(dampeningFactors);
+
             utils::CUDA_FREE(jacobians);
             utils::CUDA_FREE(gradients);
             utils::CUDA_FREE(hessians);
@@ -53,6 +55,11 @@ namespace telef::solver {
             return deltaParams;
         }
 
+
+        virtual float* getDampeningFactors(){
+            return dampeningFactors;
+        }
+
         virtual float* getJacobians(){
             return jacobians;
         }
@@ -74,6 +81,8 @@ namespace telef::solver {
         float* parameters;
         float* deltaParams;
 
+        float* dampeningFactors;
+
         float* jacobians;
         float* gradients;
         float* hessians;
@@ -85,6 +94,8 @@ namespace telef::solver {
             utils::CUDA_ALLOC_AND_ZERO(&workingParameters, static_cast<size_t>(numParameters()));
             utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(numParameters()));
             utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(numParameters()));
+
+            utils::CUDA_ALLOC_AND_ZERO(&dampeningFactors, static_cast<size_t>(numParameters()));
 
             utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(numParameters() * numResiduals()));
             utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(numParameters()));

@@ -18,6 +18,9 @@ namespace telef::solver {
         virtual float* getStep() = 0;
         virtual float* getLambda() = 0;
 
+        virtual float* getError() = 0;
+        virtual float* getWorkingError() = 0;
+
         int numResiduals() {
             return nResiduals;
         }

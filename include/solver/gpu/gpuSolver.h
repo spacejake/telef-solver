@@ -40,7 +40,7 @@ namespace telef::solver {
 
         virtual void finalize_result();
 
-        virtual float calcError(const float* residuals, const int nRes);
+        virtual float calcError(float *error, const float *residuals, const int nRes);
 
         virtual bool solveSystem(float *deltaParams, float* hessianLowTri,
                                  const float* hessians, const float* gradients,
@@ -51,10 +51,10 @@ namespace telef::solver {
         virtual void copyParams(float *destParams, const float *srcParams, const int nParams);
 
         // Step Functions
-        virtual void updateHessians(float* hessians, float* step, const int nParams);
+        virtual void
+        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodSteap);
 
-        virtual void stepUp(float* step, float* lambda);
-        virtual void stepDown(float* step, float* lambda);
+        virtual void updateStep(float* lambda, bool goodStep);
 
     private:
         void initHandlers() {

@@ -12,19 +12,14 @@ void _calc_error(float* error, const float* residuals, const int nRes);
 void calc_error(float* error, const float* residuals, const int nRes);
 
 __global__
-void _cuda_step_down(float* step, float* lambda, const float* factor);
+void _cuda_step_update(float* lambda, const float* factor);
 
-void cuda_step_down(float* step, float* lambda, const float* factor);
-
-__global__
-void _cuda_step_up(float* step, float* lambda, const float* factor);
-
-void cuda_step_up(float* step, float* lambda, const float* factor);
+void cuda_step_update(float* lambda, const float* factor);
 
 __global__
-void _update_hessians(float* hessians, float* step, int nParams);
+void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, int nParams, bool goodStep);
 
-void update_hessians(float* hessians, float* step, int nParams);
+void update_hessians(float *hessians, float *dampeningFactors, float *lambda, int nParams, bool goodStep);
 
 __global__
 void _update_parameters(float* newParams, const float* params, const float* newDelta, const int nParams);

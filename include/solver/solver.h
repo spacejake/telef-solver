@@ -72,7 +72,7 @@ namespace telef::solver {
          * @return error, a single float value on host (float) representing the sum of squared residuals
          *
          */
-        virtual float calcError(const float* residuals, const int nRes) = 0;
+        virtual float calcError(float *error, const float *residuals, const int nRes) = 0;
 
 
         virtual bool solveSystem(float *deltaParams, float* hessianLowTri,
@@ -83,9 +83,10 @@ namespace telef::solver {
         virtual void copyParams(float *destParams, const float *srcParams, const int nParams) = 0;
 
         // Step Functions
-        virtual void updateHessians(float* hessians, float* step, const int nParams) = 0;
-        virtual void stepUp(float* step, float* lambda) = 0;
-        virtual void stepDown(float* step, float* lambda) = 0;
+        virtual void
+        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodSteap) = 0;
+
+        virtual void updateStep(float* lambda, bool goodStep) = 0;
 
 //        //TODO: functions to help evaluate convergence??
 //        virtual bool evaluateStep() = 0;

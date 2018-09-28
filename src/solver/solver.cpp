@@ -17,7 +17,7 @@ Status Solver::solve() {
 
     // Initial evaluation with given params
     ResidualBlock::Ptr resBlock = resFunc->evaluate(true);
-    float error = calcError(resBlock->getResiduals(), resBlock->numResiduals());
+    float error = calcError(resBlock->getError(), resBlock->getResiduals(), resBlock->numResiduals());
 
     const std::vector<ParameterBlock::Ptr> paramBlocks = resBlock->getParameterBlocks();
 
@@ -38,9 +38,11 @@ Status Solver::solve() {
         for (ParameterBlock::Ptr paramBlock : paramBlocks) {
             //if good_step, update 1+lambda
             //else, update with (1 + lambda * up) / (1 + lambda)
-            updateHessians(paramBlock->getHessians(), resBlock->getStep(), paramBlock->numParameters());
+            updateHessians(paramBlock->getHessians(), resBlock->getLambda(), resBlock->getLambda(),
+                           paramBlock->numParameters(), good_step);
 
             // Check if decompsition results in a symmetric positive-definite matrix
+            // Solves delta = -(H(x) + lambda * I)^-1 * g(x), x+1 = x + delta
             solveSystemSuccess = solveSystem(paramBlock->getDeltaParameters(), paramBlock->getHessianLowTri(),
                                              paramBlock->getHessians(), paramBlock->getGradients(),
                                              paramBlock->numParameters());
@@ -55,13 +57,14 @@ Status Solver::solve() {
         }
 
         float newError = 0;
+
         // If the system of equations failed to be evaluated with current step, make another step and try again.
         if (solveSystemSuccess) {
-            // if derr < 0, don't do jacobian recalc
+            // if derr <= 0, don't do jacobian recalc
             ResidualBlock::Ptr resBlock = resFunc->evaluate(good_step);
 
-            newError = calcError(resBlock->getResiduals(), resBlock->numResiduals());
-            printf("Error:%.4f\n",newError);
+            newError = calcError(resBlock->getWorkingError(), resBlock->getResiduals(), resBlock->numResiduals());
+            printf("Error:%.4f\n", newError);
             derr = newError - error;
             good_step = derr <= 0;
         } else {
@@ -75,6 +78,7 @@ Status Solver::solve() {
                            paramBlock->getWorkingParameters(), paramBlock->numParameters());
             }
 
+            //TODO: Copy ResidualBlock error to workingError
             error = newError;
 
             if(-derr < options.target_error_change){
@@ -82,22 +86,15 @@ Status Solver::solve() {
                 break;
             }
 
-            /* stepdown (lambda*down)
-             * mult = 1 + lambda;
-             */
-            stepDown(resBlock->getStep(), resBlock->getLambda());
             innerIter = 0;
-        } else {
-            /*
-             * mult = (1 + lambda * up) / (1 + lambda);
-             * stepup (lambda*up)
-             */
-            stepUp(resBlock->getStep(), resBlock->getLambda());
-            innerIter++;
         }
+
+        updateStep(resBlock->getLambda(), good_step);
     }
 
     finalize_result();
+
+    printf("Total Iterations: %d\n", iter);
 
     if (iter == options.max_iterations) {
         status = Status::MAX_ITERATIONS;

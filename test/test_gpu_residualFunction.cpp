@@ -96,7 +96,7 @@ TEST(Matrix, gpu_multiply_ATxB) {
 
 //    print_array(A_d, rowA*colA);
 //    print_array(B_d, rowB*colB);
-    cudaMatMul_ATxB(C_d, A_d, rowA, colA, B_d, rowB, colB);
+    cudaMatMul_ATxB(C_d, A_d, rowA, colA, B_d, rowB, colB, 0);
 
     cudaMemcpy(C, C_d, 2*sizeof(float), cudaMemcpyDeviceToHost);
     float real_C[] = {6, 12};

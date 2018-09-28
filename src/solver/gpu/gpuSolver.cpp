@@ -9,15 +9,15 @@
 
 using namespace telef::solver;
 
-float GPUSolver::calcError(const float* residuals, const int nRes) {
+float GPUSolver::calcError(float *error, const float *residuals, const int nRes) {
     // TODO: Use Residual based error, use error_d as total error for all residuals
-    float error = 0;
+    float error_h = 0;
     //Reset to 0
     cudaMemset(error_d,0, sizeof(float));
     calc_error(error_d, residuals, nRes);
 
-    cudaMemcpy(&error, error_d, sizeof(float), cudaMemcpyDeviceToHost);
-    return error;
+    cudaMemcpy(&error_h, error_d, sizeof(float), cudaMemcpyDeviceToHost);
+    return error_h;
 }
 
 
@@ -28,24 +28,31 @@ void GPUSolver::initialize_solver() {
     cudaMemcpy(down_factor_d, &downFactor, sizeof(float), cudaMemcpyHostToDevice );
     cudaMemcpy(up_factor_d, &options.step_up, sizeof(float), cudaMemcpyHostToDevice );
 
-    float inital_step = 1 + options.lambda_initial;
+    float inital_step = options.lambda_initial;
     printf("Initial Step: %.4f\n", inital_step);
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
         // Iitialize step values
         auto resBlock = resFunc->getResidualBlock();
-        float* lambda =resBlock->getLambda();
+        float* lambda = resBlock->getLambda();
         float* step = resBlock->getStep();
+        float* error = resBlock->getError();
+        float* workError = resBlock->getWorkingError();
 
         CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(step, &inital_step, sizeof(float), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemset(error, 0, sizeof(float)));
+        CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
 
         //TODO: Initialize Parameters in init step, currently in setInitialParams
         //      This is so CPU? and GPU implementations can copy parameters to working params or on to GPU
 //        for(auto paramBlock : resBlock->getParameterBlocks()) {
 //            paramBlock->initializeParameters();
 //        }
-
-        //TODO: Initialize errors, one per residual block
+        for(auto paramBlock : resBlock->getParameterBlocks()){
+            // Copys Results from GPU onto CPU into user maintained parameter array.
+            float* dampeningFactors = paramBlock->getDampeningFactors();
+            CUDA_CHECK(cudaMemset(error, 0, paramBlock->numParameters()*sizeof(float)));
+        }
     }
 
     //Initialize Total Error
@@ -62,17 +69,17 @@ void GPUSolver::finalize_result() {
     }
 }
 
-void GPUSolver::stepUp(float* step, float* lambda) {
-    cuda_step_up(step, lambda, up_factor_d);
+void GPUSolver::updateStep(float* lambda, bool goodStep) {
+    if (goodStep) {
+        cuda_step_update(lambda, down_factor_d);
+    } else {
+        cuda_step_update(lambda, up_factor_d);
+    }
 }
 
-
-void GPUSolver::stepDown(float* step, float* lambda) {
-    cuda_step_down(step, lambda, down_factor_d);
-}
-
-void GPUSolver::updateHessians(float* hessians, float* step, const int nParams){
-    update_hessians(hessians, step, nParams);
+void
+GPUSolver::updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodSteap) {
+    update_hessians(hessians, dampeningFactors, lambda, nParams,goodSteap);
 }
 
 /**

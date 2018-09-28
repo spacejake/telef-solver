@@ -26,6 +26,8 @@ namespace telef::solver {
         virtual float* getParameters() = 0;
         virtual float* getDeltaParameters() = 0;
 
+        virtual float* getDampeningFactors() = 0;
+
         virtual float* getJacobians() = 0;
         virtual float* getGradients() = 0;
         virtual float* getHessians() = 0;

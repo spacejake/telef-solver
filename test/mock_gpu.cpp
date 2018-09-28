@@ -88,6 +88,7 @@ void GPUSolverTest::SetUp()
 
     solver = std::make_shared<GPUSolver>();
     params = {0.5,0.5};
+//    params = {-2.60216,0.0318891};
     std::vector<float*> initParams = {params.data()};
     solver->addResidualFunction(residualFunc, initParams);
 }

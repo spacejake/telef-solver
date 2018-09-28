@@ -30,8 +30,12 @@ namespace telef::solver {
             utils::CUDA_FREE(residuals);
             utils::CUDA_FREE(step);
             utils::CUDA_FREE(lambda);
+
+            utils::CUDA_FREE(error);
+            utils::CUDA_FREE(workingError);
         }
 
+        // TODO: Change to use override keyword instead of virtual
         virtual float* getResiduals(){
             return residuals;
         };
@@ -44,15 +48,29 @@ namespace telef::solver {
             return lambda;
         };
 
+        virtual float* getError() {
+            return error;
+        }
+
+        virtual float* getWorkingError(){
+            return workingError;
+        }
+
     private:
         float* residuals;
         float* step;
         float* lambda;
 
+        float* error;
+        float* workingError;
+
         void initialize(const int& nRes){
             utils::CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
             utils::CUDA_ALLOC_AND_ZERO(&step, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
+
+            utils::CUDA_ALLOC_AND_ZERO(&error, static_cast<size_t>(1));
+            utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
         }
 
         void initializeParams(const int& nRes, const std::vector<int>& nParamsList){

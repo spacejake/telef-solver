@@ -122,39 +122,52 @@ void cuda_step_down(float* step, float* lambda, const float* factor){
  * stepup (lambda*up)
  */
 __global__
-void _cuda_step_up(float* step, float* lambda, const float* factor){
-    float newLambda = lambda[0] * factor[0];
-    step[0] = (1 + newLambda) / (1 + lambda[0]);
-
-//    printf("update lambda: %.3f * %.3f = %.3f\n", lambda[0], factor[0], newLambda);
-//    printf("step up: (1 + %.3f) / (1 + %.3f) = %.3f\n", newLambda, lambda[0], step[0]);
-
-    lambda[0] = newLambda;
+void _cuda_step_update(float* lambda, const float* factor){
+    lambda[0] *= factor[0];
 }
 
-void cuda_step_up(float* step, float* lambda, const float* factor){
-    _cuda_step_up << < 1, 1 >> >(step, lambda, factor);
+void cuda_step_update(float* lambda, const float* factor){
+    _cuda_step_update << < 1, 1 >> >(lambda, factor);
     cudaDeviceSynchronize();
 }
 
 __global__
-void _update_hessians(float* hessians, float* step, int nParams){
+void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, int nParams, bool goodStep) {
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
 
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
+        int diagonal_index = i+nParams*i;
         // Apply step down diagonal
-        hessians[i+nParams*i] *= step[0];
+        //hessians[i+nParams*i] += hessians[i+nParams*i] * step[0];
+        if (goodStep)
+        {
+            hessians[diagonal_index] -= dampeningFactors[i] * lambda[0] / 10.;
+        }
+
+        // adaptive scaling
+        dampeningFactors[i]
+                = std::max(dampeningFactors[i], hessians[diagonal_index]);
+
+        // continuous scaling
+        //scaling_vector[parameter_index] = hessian[diagonal_index];
+
+        // initial scaling
+        //if (scaling_vector[parameter_index] == 0.)
+        //    scaling_vector[parameter_index] = hessian[diagonal_index];
+
+        hessians[diagonal_index] += dampeningFactors[i] * lambda[0];
+
 //        printf("hessians[%d][%d]: %.4f\n",i, i, hessians[i+nParams*i]);
     }
 }
 
-void update_hessians(float* hessians, float* step, int nParams){
+void update_hessians(float *hessians, float *dampeningFactors, float *lambda, int nParams, bool goodStep) {
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
-    _update_hessians << < dimGrid, dimBlock >> >(hessians, step, nParams);
+    _update_hessians << < dimGrid, dimBlock >> >(hessians, dampeningFactors, lambda, nParams, goodStep);
     cudaDeviceSynchronize();
 //    print_array("New Hessian",hessians, nParams*nParams);
 

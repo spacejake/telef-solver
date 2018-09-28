@@ -23,7 +23,7 @@ using namespace telef::solver;
 using namespace testing;
 
 TEST_F(GPUSolverTest, solve2) {
-    solver->options.max_iterations = 12;
+    solver->options.max_iterations = 50;
 
     Status  status = solver->solve();
 
@@ -74,7 +74,7 @@ TEST(GPUSolverTest_cuda, stepDown) {
     utils::CUDA_ALLOC_AND_COPY(&lambda, &lambda_h, static_cast<size_t >(1));
     utils::CUDA_ALLOC_AND_COPY(&factor, &factor_h, static_cast<size_t >(1));
 
-    cuda_step_down(step, lambda, factor);
+    cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
     cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
@@ -86,7 +86,7 @@ TEST(GPUSolverTest_cuda, stepDown) {
     EXPECT_THAT(step_h, FloatNear(real_step, ferr));
     EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 
-    cuda_step_down(step, lambda, factor);
+    cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
     cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
@@ -118,7 +118,7 @@ TEST(GPUSolverTest_cuda, stepUp) {
     utils::CUDA_ALLOC_AND_COPY(&lambda, &lambda_h, static_cast<size_t >(1));
     utils::CUDA_ALLOC_AND_COPY(&factor, &factor_h, static_cast<size_t >(1));
 
-    cuda_step_up(step, lambda, factor);
+    cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
     cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
@@ -130,7 +130,7 @@ TEST(GPUSolverTest_cuda, stepUp) {
     EXPECT_THAT(step_h, FloatNear(real_step, ferr));
     EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 
-    cuda_step_up(step, lambda, factor);
+    cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
     cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
@@ -168,7 +168,7 @@ TEST(GPUSolverTest_cuda, updateHessian) {
     utils::CUDA_ALLOC_AND_COPY(&hessian_d, hessian, static_cast<size_t >(nParams*nParams));
     utils::CUDA_ALLOC_AND_COPY(&step_d, &step, static_cast<size_t >(1));
 
-    update_hessians(hessian_d, step_d, nParams);
+    update_hessians(hessian_d, nullptr, step_d, nParams, false);
 
     cudaMemcpy(hessian, hessian_d, nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
 
