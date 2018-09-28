@@ -5,7 +5,7 @@
 
 
 void calc_gradients(float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
-    cudaMatMul_ATxB(gradients, jacobians, nRes, nParams, residuals, nRes, 1);
+    cudaMatMul_ATxB(gradients, jacobians, nRes, nParams, residuals, nRes, 1, -1.0f);
 }
 
 
@@ -15,7 +15,8 @@ void calc_hessians(float *hessians, float *jacobians, int nRes, int nParams){
 
 void cudaMatMul_ATxB(float *matC,
                      const float *matA, int aRows, int aCols,
-                     const float *matB, int bRows, int bCols) {
+                     const float *matB, int bRows, int bCols,
+                     const float alpha) {
 
     cublasHandle_t cublasHandle;
     if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
@@ -23,10 +24,7 @@ void cudaMatMul_ATxB(float *matC,
     }
     // Don't know what this is (scalar?) but examples use this
     cublasStatus_t status;
-    const float alf = 1;
-    const float bet = 0;
-    const float *alpha = &alf;
-    const float *beta = &bet;
+    const float beta = 0;
 
     /* Perform operation using cublas, inputs/outputs are col-major.
      * vector and array were originally Eigen which defaults to Col-major
@@ -38,10 +36,10 @@ void cudaMatMul_ATxB(float *matC,
             cublasSgemm(cublasHandle,
                         CUBLAS_OP_T, CUBLAS_OP_N, // Matrix op(A) and op(B): No-op, Transpose, Conjugate
                         aCols, bCols, aRows, //(m,n,k)
-                        alpha,
+                        &alpha,
                         matA, aRows/*leading dim*/, //(mxk) or if A^T: (kxm)
                         matB, bRows/*leading dim*/, //(kxn)
-                        beta,
+                        &beta,
                         matC, aCols/*leading dim*/); //(mxn)
 
     if (status != CUBLAS_STATUS_SUCCESS) {

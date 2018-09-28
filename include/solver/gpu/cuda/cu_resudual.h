@@ -12,4 +12,5 @@ void cudaMatMul(float *matC,
 
 void cudaMatMul_ATxB(float *matC,
                      const float *matA, int aRows, int aCols,
-                     const float *matB, int bRows, int bCols);
+                     const float *matB, int bRows, int bCols,
+                     const float alpha=1.0f);
