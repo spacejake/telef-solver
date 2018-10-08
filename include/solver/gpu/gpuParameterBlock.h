@@ -10,7 +10,9 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<GPUParameterBlock>;
         using ConstPtr = std::shared_ptr<const GPUParameterBlock>;
 
-        GPUParameterBlock(const int nRes, const int nParams) : ParameterBlock(nRes, nParams){
+        GPUParameterBlock(const int nRes, const int nParams)
+                : ParameterBlock(nRes, nParams) {
+            /*, solverBuffer(NULL), solverBufferSize(0)*/
             initDeviceMemory();
         }
 
@@ -25,6 +27,7 @@ namespace telef::solver {
             utils::CUDA_FREE(gradients);
             utils::CUDA_FREE(hessians);
             utils::CUDA_FREE(hessianLowTri);
+//            utils::CUDA_FREE(solverBuffer);
         }
 
 
@@ -76,6 +79,14 @@ namespace telef::solver {
             return hessianLowTri;
         }
 
+//        virtual float* getSolverBuffer(){
+//            return solverBuffer;
+//        }
+//
+//        virtual int& getSolverBufferSize(){
+//            return solverBufferSize;
+//        }
+
     private:
         float* workingParameters;
         float* parameters;
@@ -87,6 +98,9 @@ namespace telef::solver {
         float* gradients;
         float* hessians;
         float* hessianLowTri;
+
+//        float* solverBuffer;
+//        int solverBufferSize;
 
     private:
         void initDeviceMemory(){

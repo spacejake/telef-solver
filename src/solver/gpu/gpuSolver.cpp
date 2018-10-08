@@ -1,11 +1,13 @@
 
 #include <cublas_v2.h>
 #include <cusolverDn.h>
+#include <solver/gpu/gpuResidualFunction.h>
 
 #include "solver/gpu/cuda/cu_solver.h"
 
 #include "util/cudautil.h"
 #include "solver/gpu/gpuSolver.h"
+#include "solver/gpu/gpuResidualFunction.h"
 
 using namespace telef::solver;
 
@@ -31,6 +33,12 @@ void GPUSolver::initialize_solver() {
     float inital_step = options.lambda_initial;
     printf("Initial Step: %.4f\n", inital_step);
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
+        std::shared_ptr<GPUResidualFunction> gpuResFunc = std::dynamic_pointer_cast<GPUResidualFunction>(resFunc);
+        if (gpuResFunc != nullptr) {
+            printf("Setting ResFunc Cublas Handle\n");
+            gpuResFunc->setCublasHandle(cublasHandle);
+        }
+
         // Iitialize step values
         auto resBlock = resFunc->getResidualBlock();
         float* lambda = resBlock->getLambda();
@@ -42,6 +50,8 @@ void GPUSolver::initialize_solver() {
         CUDA_CHECK(cudaMemcpy(step, &inital_step, sizeof(float), cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemset(error, 0, sizeof(float)));
         CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
+
+
 
         //TODO: Initialize Parameters in init step, currently in setInitialParams
         //      This is so CPU? and GPU implementations can copy parameters to working params or on to GPU
@@ -108,9 +118,8 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
     CUDA_CHECK(cudaMemcpy(destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 }
 
-bool GPUSolver::solveSystem(float *deltaParams, float* hessianLowTri,
-                            const float* hessians, const float* gradients,
-                            const int nParams){
+bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const float *hessians, const float *gradients, const int nParams) {
+
 
     // Copy hessians(A) to hessianLowTri(will be L), since it is inplace decomposition, for A=LL*
     CUDA_CHECK(cudaMemcpy(hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));

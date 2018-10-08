@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cublas_v2.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -21,9 +22,12 @@ class GPUResidualFunctionTest : public testing::Test
 public:
 
     telef::solver::GPUResidualFunction::Ptr residualFunc;
+    cublasHandle_t cublasHandle;
 
     virtual void SetUp();
-    virtual void TearDown(){}
+    virtual void TearDown(){
+        cublasDestroy_v2(cublasHandle);
+    }
 
     void initResiduals();
     void initJacobians();

@@ -32,6 +32,10 @@ void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool com
 //GPUResidualFunctionTest START
 void GPUResidualFunctionTest::SetUp()
 {
+    if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
+        throw std::runtime_error("Cublas could not be initialized");
+    }
+
     std::vector<int> nParams = {2};
     int nRes = 4;
     std::vector<float> params = {0.5,0.5};
@@ -43,7 +47,7 @@ void GPUResidualFunctionTest::SetUp()
     CostFunction::Ptr cost = std::make_shared<TestCostFunction>();
 
     residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
-
+    residualFunc->setCublasHandle(cublasHandle);
 
 
 //        float residuals[] = {10, 3, 4, 1};

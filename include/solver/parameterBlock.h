@@ -33,7 +33,6 @@ namespace telef::solver {
         virtual float* getHessians() = 0;
         virtual float* getHessianLowTri() = 0;
 
-
         int numParameters() {
             return nParameters;
         }
@@ -41,6 +40,7 @@ namespace telef::solver {
         int numResiduals() {
             return nResiduals;
         }
+
     protected:
         int nResiduals;
         float* resultParameters;
