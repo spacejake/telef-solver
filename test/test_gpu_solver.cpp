@@ -24,6 +24,7 @@ using namespace testing;
 
 TEST_F(GPUSolverTest, solve2) {
     solver->options.max_iterations = 50;
+    solver->options.lambda_initial = 1;
 
     Status  status = solver->solve();
 
@@ -62,43 +63,33 @@ TEST(GPUSolverTest_cuda, calcError) {
 TEST(GPUSolverTest_cuda, stepDown) {
     float ferr = 1e-3;
 
-    float *step;
     float *lambda;
     float *factor;
 
-    float step_h;
     float lambda_h = 0.1;
     float factor_h = 1/10.0;
 
-    utils::CUDA_ALLOC_AND_ZERO(&step, static_cast<size_t >(1));
     utils::CUDA_ALLOC_AND_COPY(&lambda, &lambda_h, static_cast<size_t >(1));
     utils::CUDA_ALLOC_AND_COPY(&factor, &factor_h, static_cast<size_t >(1));
 
     cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
-    cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
 
-    float real_step = 1.010;
     float real_lambda = 0.010;
 
-    EXPECT_THAT(step_h, FloatNear(real_step, ferr));
     EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 
     cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
-    cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
 
-    real_step = 1.001;
     real_lambda = 0.001;
 
-    EXPECT_THAT(step_h, FloatNear(real_step, ferr));
     EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 
-    cudaFree(step);
     cudaFree(lambda);
     cudaFree(factor);
 }
@@ -106,40 +97,31 @@ TEST(GPUSolverTest_cuda, stepDown) {
 TEST(GPUSolverTest_cuda, stepUp) {
     float ferr = 1e-3;
 
-    float *step;
     float *lambda;
     float *factor;
 
-    float step_h;
     float lambda_h = 0.1;
     float factor_h = 10.0;
 
-    utils::CUDA_ALLOC_AND_ZERO(&step, static_cast<size_t >(1));
     utils::CUDA_ALLOC_AND_COPY(&lambda, &lambda_h, static_cast<size_t >(1));
     utils::CUDA_ALLOC_AND_COPY(&factor, &factor_h, static_cast<size_t >(1));
 
     cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
-    cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
 
-    float real_step = 1.818;
     float real_lambda = 1.0;
 
-    EXPECT_THAT(step_h, FloatNear(real_step, ferr));
     EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 
     cuda_step_update(lambda, factor);
     cudaDeviceSynchronize();
 
-    cudaMemcpy(&step_h, step, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
 
-    real_step = 5.500;
     real_lambda = 10.000;
 
-    EXPECT_THAT(step_h, FloatNear(real_step, ferr));
     EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 
 //    float down_factor_h = 1/10.0;
@@ -151,7 +133,6 @@ TEST(GPUSolverTest_cuda, stepUp) {
 //    cudaFree(down_factor);
 //    cudaDeviceSynchronize();
 
-    cudaFree(step);
     cudaFree(lambda);
     cudaFree(factor);
 }
@@ -160,24 +141,32 @@ TEST(GPUSolverTest_cuda, stepUp) {
 TEST(GPUSolverTest_cuda, updateHessian) {
     float hessian[] = {4.42934,  20.6941,
                         20.6941, 96.684};
-    float step = 1.1;
+    float dampeningFactors[] = {0.0f, 0.0f};
+
+    float step = 0.1f;
     float *hessian_d;
+    float *dampeningFactors_d;
     float *step_d;
     int nParams = 2;
 
     utils::CUDA_ALLOC_AND_COPY(&hessian_d, hessian, static_cast<size_t >(nParams*nParams));
+    utils::CUDA_ALLOC_AND_COPY(&dampeningFactors_d, dampeningFactors, static_cast<size_t >(nParams));
     utils::CUDA_ALLOC_AND_COPY(&step_d, &step, static_cast<size_t >(1));
 
-    update_hessians(hessian_d, nullptr, step_d, nParams, false);
+    update_hessians(hessian_d, dampeningFactors_d, step_d, nParams, false);
 
     cudaMemcpy(hessian, hessian_d, nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(dampeningFactors, dampeningFactors_d, nParams*sizeof(float), cudaMemcpyDeviceToHost);
 
     float real_update_hessian[] = {4.872274,  20.6941,
                                     20.6941, 106.3524};
+    float real_dampeningFactors[] = {4.42934, 96.68400};
 
     float ferr = 1e-3;
     EXPECT_THAT(hessian,
                 Pointwise(FloatNear(ferr), real_update_hessian));
+    EXPECT_THAT(dampeningFactors,
+                Pointwise(FloatNear(ferr), real_dampeningFactors));
 
     cudaFree(hessian_d);
     cudaFree(step_d);
