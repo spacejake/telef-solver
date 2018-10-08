@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cuda_runtime_api.h>
-
+#include <cusolverDn.h>
 
 
 void print_array(const char* msg, float *arr_d, int n);

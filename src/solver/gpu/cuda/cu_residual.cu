@@ -1,27 +1,23 @@
 #include <stdexcept>
-#include <cublas_v2.h>
 
 #include "solver/gpu/cuda/cu_resudual.h"
 
 
-void calc_gradients(float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
-    cudaMatMul_ATxB(gradients, jacobians, nRes, nParams, residuals, nRes, 1, -1.0f);
+void calc_gradients(cublasHandle_t cublasHandle, float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
+    //Compute -g(x)
+    cudaMatMul_ATxB(cublasHandle, gradients, jacobians, nRes, nParams, residuals, nRes, 1, -1.0f);
 }
 
 
-void calc_hessians(float *hessians, float *jacobians, int nRes, int nParams){
-    cudaMatMul_ATxB(hessians, jacobians, nRes, nParams, jacobians, nRes, nParams);
+void calc_hessians(cublasHandle_t cublasHandle, float *hessians, float *jacobians, int nRes, int nParams){
+    cudaMatMul_ATxB(cublasHandle, hessians, jacobians, nRes, nParams, jacobians, nRes, nParams);
 }
 
-void cudaMatMul_ATxB(float *matC,
+void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC,
                      const float *matA, int aRows, int aCols,
                      const float *matB, int bRows, int bCols,
                      const float alpha) {
 
-    cublasHandle_t cublasHandle;
-    if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
-        throw std::runtime_error("Cublas could not be initialized");
-    }
     // Don't know what this is (scalar?) but examples use this
     cublasStatus_t status;
     const float beta = 0;
@@ -47,14 +43,10 @@ void cudaMatMul_ATxB(float *matC,
     }
 }
 
-void cudaMatMul(float *matC,
+void cudaMatMul(cublasHandle_t cublasHandle, float *matC,
                 const float *matA, int aRows, int aCols,
                 const float *matB, int bRows, int bCols) {
 
-    cublasHandle_t cublasHandle;
-    if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
-        throw std::runtime_error("Cublas could not be initialized");
-    }
     // Don't know what this is (scalar?) but examples use this
     cublasStatus_t status;
     const float alf = 1;

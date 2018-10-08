@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cublas_v2.h>
 #include "solver/residualFunction.h"
 #include "solver/gpu/gpuResidualBlock.h"
 
@@ -16,9 +17,17 @@ namespace telef::solver {
                             const float weight_=1.0)
                 : ResidualFunction(costFunc_, resBlock_, weight_) {}
 
-        virtual ~GPUResidualFunction(){}
+        virtual ~GPUResidualFunction(){
+        }
 
         virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams);
         virtual void calcHessians(float* hessians, float* jacobians, int nRes, int nParams);
+
+        void setCublasHandle(cublasHandle_t cublasHandle_){
+            cublasHandle = cublasHandle_;
+        }
+
+    protected:
+        cublasHandle_t cublasHandle;
     };
 }

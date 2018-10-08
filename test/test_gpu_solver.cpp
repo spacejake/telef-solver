@@ -23,7 +23,7 @@ using namespace telef::solver;
 using namespace testing;
 
 TEST_F(GPUSolverTest, solve2) {
-    solver->options.max_iterations = 12;
+    solver->options.max_iterations = 50;
 
     Status  status = solver->solve();
 
@@ -219,15 +219,10 @@ TEST(GPUSolverTest_cuda, CholeskyDecompseHessian) {
     cusolverDnHandle_t solver_handle;
     cusolverDnCreate(&solver_handle);
 
-//    // --- CUBLAS initialization
-//    cublasHandle_t cublas_handle;
-//    cublasCreate(&cublas_handle);
-
     float hessian[] = {4.872274,  20.6941,
                        20.6941, 106.3524};
     float *hessian_d;
     int nParams = 2;
-
     utils::CUDA_ALLOC_AND_COPY(&hessian_d, hessian, static_cast<size_t >(nParams*nParams));
     decompose_cholesky(solver_handle, hessian_d, nParams);
 

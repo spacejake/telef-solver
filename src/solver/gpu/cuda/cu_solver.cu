@@ -179,7 +179,27 @@ void update_parameters(float* newParams, const float* params, const float* newDe
 
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
     cudaDeviceSynchronize();
-    print_array("New Params", newParams, nParams);
+    //print_array("New Params", newParams, nParams);
+}
+
+void initializeSolverBuffer(cusolverDnHandle_t solver_handle,
+        float **solverBuffer, int &solverBufferSize, cublasFillMode_t uplo,
+        float *matrix, const int &nRows, const int &nCols) {
+
+    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
+
+    // Allocate working space for decomposition
+    // TODO: Try Allocate working space once in parameterBlock, or every-time hessian is computed
+    //       as the matrix should not change much
+    cusolver_status =
+            cusolverDnSpotrf_bufferSize(solver_handle, uplo,
+                                        nRows, matrix, nCols,
+                                        &solverBufferSize);
+
+    // Should not happen, if it does bad stuff man...
+    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+
+    cudaMalloc((void**)solverBuffer, solverBufferSize * sizeof(float));
 }
 
 /**
@@ -200,27 +220,21 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
     int lda = n;
     const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
 
+
     int *info_d = NULL; // info in gpu (device copy)
 //    CUDA_MALLOC(&info_d, static_cast<size_t>(1));
     cudaMalloc((void**)&info_d, sizeof(int));
 
-    int buffer_size = 0;
-    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
-
     // Allocate working space for decomposition
-    // TODO: Try Allocate working space once in parameterBlock, or every-time hessian is computed
-    //       as the matrix should not change much
-    cusolver_status =
-            cusolverDnSpotrf_bufferSize(solver_handle, uplo,
-                                        n, matA, lda,
-                                        &buffer_size);
+    // TODO: Try Lazily initialize allocate working space once in parameterBlock, or every-time hessian is computed
+    //       as the matrix should not change much?
 
-    // Should not happen, if it does bad stuff man...
-    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
-
+    int buffer_size = 0;
     float *buffer_d;
-//    CUDA_MALLOC(&buffer_d, static_cast<size_t>(buffer_size));
-    cudaMalloc((void**)&buffer_d, buffer_size * sizeof(float));
+    initializeSolverBuffer(solver_handle, &buffer_d, buffer_size, uplo,
+                           matA, n, lda);
+
+    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 
     // Compute A = L*LH, result in matA in lower triangular form
 //    auto t1 = Clock::now();

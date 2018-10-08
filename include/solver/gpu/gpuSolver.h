@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cublas_v2.h>
 #include <cusolver_common.h>
 #include <cusolverDn.h>
 #include "util/cudautil.h"
@@ -28,6 +29,7 @@ namespace telef::solver {
             cudaFree(up_factor_d);
 
             cusolverDnDestroy(solver_handle);
+            cublasDestroy_v2(cublasHandle);
         }
 
     protected:
@@ -35,6 +37,7 @@ namespace telef::solver {
         float *down_factor_d;
         float *up_factor_d;
         cusolverDnHandle_t solver_handle;
+        cublasHandle_t cublasHandle;
 
         virtual void initialize_solver();
 
@@ -59,6 +62,9 @@ namespace telef::solver {
     private:
         void initHandlers() {
             cusolverDnCreate(&solver_handle);
+            if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
+                throw std::runtime_error("Cublas could not be initialized");
+            }
         }
 
         void initDeviceMemory(){

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <string>
 
+#include <cublas_v2.h>
+
 #include "mock_gpu.h"
 
 #include "solver/gpu/cuda/cu_resudual.h"
@@ -16,6 +18,11 @@ using namespace telef::solver;
 
 TEST(Matrix, gpu_multiply) {
 
+    cublasHandle_t cublasHandle;
+    auto cublasStatus = cublasCreate(&cublasHandle);
+    if(cublasStatus != CUBLAS_STATUS_SUCCESS) {
+        throw std::runtime_error("Cublas could not be initialized");
+    }
 
     float A[] = {1, 2,
                  1, 2,
@@ -44,7 +51,7 @@ TEST(Matrix, gpu_multiply) {
 
 //    print_array(A_d, rowA*colA);
 //    print_array(B_d, rowB*colB);
-    cudaMatMul(C_d, A_d, rowA, colA, B_d, rowB, colB);
+    cudaMatMul(cublasHandle, C_d, A_d, rowA, colA, B_d, rowB, colB);
 
     cudaMemcpy(C, C_d, 2*sizeof(float), cudaMemcpyDeviceToHost);
     float real_C[] = {6, 12};
@@ -57,11 +64,16 @@ TEST(Matrix, gpu_multiply) {
     cudaFree(A_d);
     cudaFree(B_d);
     cudaFree(C_d);
+    cublasDestroy_v2(cublasHandle);
 }
 
 
 TEST(Matrix, gpu_multiply_ATxB) {
 
+    cublasHandle_t cublasHandle;
+    if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
+        throw std::runtime_error("Cublas could not be initialized");
+    }
 
 //    float A[] = {1, 2,
 //                 1, 2,
@@ -96,7 +108,7 @@ TEST(Matrix, gpu_multiply_ATxB) {
 
 //    print_array(A_d, rowA*colA);
 //    print_array(B_d, rowB*colB);
-    cudaMatMul_ATxB(C_d, A_d, rowA, colA, B_d, rowB, colB);
+    cudaMatMul_ATxB(cublasHandle, C_d, A_d, rowA, colA, B_d, rowB, colB);
 
     cudaMemcpy(C, C_d, 2*sizeof(float), cudaMemcpyDeviceToHost);
     float real_C[] = {6, 12};
@@ -109,6 +121,7 @@ TEST(Matrix, gpu_multiply_ATxB) {
     cudaFree(A_d);
     cudaFree(B_d);
     cudaFree(C_d);
+    cublasDestroy_v2(cublasHandle);
 }
 
 TEST(CostFunctionTest, costEvaluate) {
@@ -181,7 +194,7 @@ TEST_F(GPUResidualFunctionTest, gradientTest) {
     float gradients[2];
 
     cudaMemcpy(gradients, paramBlock->getGradients(), nParams*sizeof(float), cudaMemcpyDeviceToHost);
-    float real_gradients[] = {20.0488, 93.6692};
+    float real_gradients[] = {-20.0488, -93.6692};
 
 
     float ferr = 1e-4;
@@ -243,7 +256,7 @@ TEST_F(GPUResidualFunctionTest, evaluate) {
     float real_res[] = {-10.2631, -3.2631, -4.2631, -1.2631};
     float real_jacobi[] = {-1.0523, -1.0523, -1.0523, -1.0523,
                            -4.9164, -4.9164, -4.9164, -4.9164};
-    float real_gradients[] = {20.0488, 93.6692};
+    float real_gradients[] = {-20.0488, -93.6692};
     float real_hessiens[] = {4.42934,  20.6941,
                              20.6941, 96.684};
 
