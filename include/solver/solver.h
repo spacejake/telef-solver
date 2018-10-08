@@ -32,10 +32,10 @@ namespace telef::solver {
 
         Solver(){
             options.lambda_initial = 0.1;
-            options.max_iterations = 10000;
+            options.max_iterations = 1000;
             options.step_up = 10;
             options.step_down = 10;
-            options.target_error_change = 0.01;
+            options.target_error_change = 1e-3;
             options.verbose = false;
         }
 

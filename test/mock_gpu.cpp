@@ -6,6 +6,27 @@
 using namespace telef::solver::utils;
 using namespace telef::solver;
 
+//TestCostFunctionSimple START
+TestCostFunctionSimple::TestCostFunctionSimple(){
+    float measurements[] = {10};
+    CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+}
+
+TestCostFunctionSimple::~TestCostFunctionSimple(){
+    CUDA_FREE(measurements_d);
+}
+
+void TestCostFunctionSimple::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
+    ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
+    calc_resSimple(residualBlock->getResiduals(), params->getWorkingParameters(), measurements_d,
+            residualBlock->numResiduals(), params->numParameters());
+
+    if (computeJacobians) {
+        calc_jacobiSimple(params->getJacobians(), params->getWorkingParameters(),
+                     residualBlock->numResiduals(), params->numParameters());
+    }
+}
+//TestCostFunctionSimple END
 
 //TestCostFunction START
 TestCostFunction::TestCostFunction(){
@@ -80,6 +101,27 @@ void GPUResidualFunctionTest::initJacobians(){
     cudaMemcpy(paramBlock->getJacobians(), jacobians, nRes*nParams*sizeof(float), cudaMemcpyHostToDevice);
 }
 //GPUResidualFunctionTest END
+
+//GPUSolverTestSimple START
+void GPUSolverTestSimple::SetUp()
+{
+    std::vector<int> nParams = {1};
+    int nRes = 1;
+    auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);
+    auto cost = std::make_shared<TestCostFunctionSimple>();
+    auto residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
+
+    solver = std::make_shared<GPUSolver>();
+    params = {0.5f};
+    std::vector<float*> initParams = {params.data()};
+    solver->addResidualFunction(residualFunc, initParams);
+}
+
+void GPUSolverTestSimple::TearDown() {
+//    cudaDeviceReset();
+}
+
+//GPUSolverTestSimple END
 
 //GPUSolverTest START
 void GPUSolverTest::SetUp()

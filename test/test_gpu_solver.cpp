@@ -22,9 +22,22 @@ using namespace std;
 using namespace telef::solver;
 using namespace testing;
 
+TEST_F(GPUSolverTestSimple, solve1) {
+    solver->options.max_iterations = 500;
+    solver->options.target_error_change=1e-4;
+
+    Status status = solver->solve();
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    vector<float> real_fit_params = {3.162278};
+    float ferr = 1e-2;
+    EXPECT_THAT(params,
+                Pointwise(FloatNear(ferr), real_fit_params));
+}
+
 TEST_F(GPUSolverTest, solve2) {
-    solver->options.max_iterations = 50;
-    solver->options.lambda_initial = 1;
+    solver->options.max_iterations = 500;
 
     Status  status = solver->solve();
 

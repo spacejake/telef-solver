@@ -192,7 +192,7 @@ void update_parameters(float* newParams, const float* params, const float* newDe
 
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
     cudaDeviceSynchronize();
-    //print_array("New Params", newParams, nParams);
+    print_array("New Params", newParams, nParams);
 }
 
 void initializeSolverBuffer(cusolverDnHandle_t solver_handle,

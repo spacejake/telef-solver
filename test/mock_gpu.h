@@ -7,6 +7,15 @@
 #include <solver/gpu/gpuSolver.h>
 #include "solver/gpu/gpuResidualFunction.h"
 
+class TestCostFunctionSimple : public telef::solver::CostFunction {
+public:
+    TestCostFunctionSimple();
+    virtual ~TestCostFunctionSimple();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
+private:
+    float* measurements_d;
+};
+
 class TestCostFunction : public telef::solver::CostFunction {
 public:
     TestCostFunction();
@@ -31,6 +40,18 @@ public:
 
     void initResiduals();
     void initJacobians();
+};
+
+// A new one of these is created for each test
+class GPUSolverTestSimple : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    std::vector<float> params;
+
+    virtual void SetUp();
+    virtual void TearDown();
 };
 
 // A new one of these is created for each test
