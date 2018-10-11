@@ -11,15 +11,22 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<ResidualBlock>;
         using ConstPtr = std::shared_ptr<const ResidualBlock>;
 
-        ResidualBlock(const int nRes): nResiduals(nRes) {}
+        ResidualBlock(const int nRes): error(0.0f), nResiduals(nRes) {}
         virtual ~ResidualBlock(){}
 
         virtual float* getResiduals() = 0;
         virtual float* getStep() = 0;
         virtual float* getLambda() = 0;
 
-        virtual float* getError() = 0;
         virtual float* getWorkingError() = 0;
+
+        float setError(float error_) {
+            error = error_;
+        };
+
+        float getError() {
+            return error;
+        };
 
         int numResiduals() {
             return nResiduals;
@@ -50,6 +57,7 @@ namespace telef::solver {
         }
 
     protected:
+        float error;
         int nResiduals;
         std::vector<ParameterBlock::Ptr> parameterBlocks;
     };

@@ -31,7 +31,6 @@ namespace telef::solver {
             utils::CUDA_FREE(step);
             utils::CUDA_FREE(lambda);
 
-            utils::CUDA_FREE(error);
             utils::CUDA_FREE(workingError);
         }
 
@@ -48,10 +47,6 @@ namespace telef::solver {
             return lambda;
         };
 
-        virtual float* getError() {
-            return error;
-        }
-
         virtual float* getWorkingError(){
             return workingError;
         }
@@ -61,7 +56,6 @@ namespace telef::solver {
         float* step;
         float* lambda;
 
-        float* error;
         float* workingError;
 
         void initialize(const int& nRes){
@@ -69,7 +63,6 @@ namespace telef::solver {
             utils::CUDA_ALLOC_AND_ZERO(&step, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
 
-            utils::CUDA_ALLOC_AND_ZERO(&error, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
         }
 

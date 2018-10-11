@@ -31,11 +31,11 @@ namespace telef::solver {
         Options options;
 
         Solver(){
-            options.lambda_initial = 0.1;
+            options.lambda_initial = 1e-2;
             options.max_iterations = 1000;
             options.step_up = 10;
             options.step_down = 10;
-            options.target_error_change = 1e-3;
+            options.target_error_change = 1e-4;
             options.verbose = false;
         }
 

@@ -43,12 +43,10 @@ void GPUSolver::initialize_solver() {
         auto resBlock = resFunc->getResidualBlock();
         float* lambda = resBlock->getLambda();
         float* step = resBlock->getStep();
-        float* error = resBlock->getError();
         float* workError = resBlock->getWorkingError();
 
         CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(step, &inital_step, sizeof(float), cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemset(error, 0, sizeof(float)));
         CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
 
 
@@ -61,7 +59,7 @@ void GPUSolver::initialize_solver() {
         for(auto paramBlock : resBlock->getParameterBlocks()){
             // Copys Results from GPU onto CPU into user maintained parameter array.
             float* dampeningFactors = paramBlock->getDampeningFactors();
-            CUDA_CHECK(cudaMemset(error, 0, paramBlock->numParameters()*sizeof(float)));
+            CUDA_CHECK(cudaMemset(dampeningFactors, 0, paramBlock->numParameters()*sizeof(float)));
         }
     }
 
