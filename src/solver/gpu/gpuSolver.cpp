@@ -31,11 +31,9 @@ void GPUSolver::initialize_solver() {
     cudaMemcpy(up_factor_d, &options.step_up, sizeof(float), cudaMemcpyHostToDevice );
 
     float inital_step = options.lambda_initial;
-    printf("Initial Step: %.4f\n", inital_step);
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
         std::shared_ptr<GPUResidualFunction> gpuResFunc = std::dynamic_pointer_cast<GPUResidualFunction>(resFunc);
         if (gpuResFunc != nullptr) {
-            printf("Setting ResFunc Cublas Handle\n");
             gpuResFunc->setCublasHandle(cublasHandle);
         }
 
