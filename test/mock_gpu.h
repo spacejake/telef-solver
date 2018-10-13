@@ -65,3 +65,16 @@ public:
     virtual void SetUp();
     virtual void TearDown();
 };
+
+// A new one of these is created for each test
+class GPUSolverMultiResidual : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    std::vector<float> params1;
+    std::vector<float> params2;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};

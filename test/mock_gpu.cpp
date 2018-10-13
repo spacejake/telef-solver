@@ -144,3 +144,33 @@ void GPUSolverTest::TearDown() {
 }
 
 //GPUSolverTest END
+
+//GPUSolverMultiResidual START
+void GPUSolverMultiResidual::SetUp()
+{
+    solver = std::make_shared<GPUSolver>();
+
+    std::vector<int> nParams1 = {1};
+    int nRes1 = 1;
+    auto resBlock1 = std::make_shared<GPUResidualBlock>(nRes1, nParams1);
+    auto cost1 = std::make_shared<TestCostFunctionSimple>();
+    auto residualFunc1 = std::make_shared<GPUResidualFunction>(cost1, resBlock1, 1.0);
+    params1 = {0.5f};
+    std::vector<float*> initParams1 = {params1.data()};
+    solver->addResidualFunction(residualFunc1, initParams1);
+
+    std::vector<int> nParams2 = {2};
+    int nRes2 = 4;
+    auto resBlock2 = std::make_shared<GPUResidualBlock>(nRes2, nParams2);
+    auto cost2 = std::make_shared<TestCostFunction>();
+    auto residualFunc2 = std::make_shared<GPUResidualFunction>(cost2, resBlock2, 1.0);
+    params2 = {0.5,0.5};
+    std::vector<float*> initParams2 = {params2.data()};
+    solver->addResidualFunction(residualFunc2, initParams2);
+}
+
+void GPUSolverMultiResidual::TearDown() {
+//    cudaDeviceReset();
+}
+
+//GPUSolverTest END
