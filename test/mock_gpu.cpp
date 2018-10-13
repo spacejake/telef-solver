@@ -50,6 +50,41 @@ void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool com
 }
 //TestCostFunction END
 
+//TestMultiParamCostFunction START
+TestMultiParamCostFunction::TestCostFunction(){
+    float measurements[] = {10,3,4,1};
+    CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+}
+
+TestMultiParamCostFunction::~TestCostFunction(){
+    CUDA_FREE(measurements_d);
+}
+
+void TestMultiParamCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
+    ParameterBlock::Ptr params1 = residualBlock->getParameterBlocks()[0];
+    ParameterBlock::Ptr params2 = residualBlock->getParameterBlocks()[1];
+
+    calc_res0(residualBlock->getResiduals(), params1->getWorkingParameters(), measurements_d,
+              residualBlock->numResiduals(), params1->numParameters());
+
+    if (computeJacobians) {
+        calc_jacobi0(params1->getJacobians(), params1->getWorkingParameters(),
+                     residualBlock->numResiduals(), params1->numParameters());
+    }
+
+
+    calc_res0(residualBlock->getResiduals(), params2->getWorkingParameters(), measurements_d,
+              residualBlock->numResiduals(), params2->numParameters());
+
+    if (computeJacobians) {
+        calc_jacobi0(params2->getJacobians(), params2->getWorkingParameters(),
+                     residualBlock->numResiduals(), params2->numParameters());
+    }
+
+
+}
+//TestMultiParamCostFunction END
+
 //GPUResidualFunctionTest START
 void GPUResidualFunctionTest::SetUp()
 {
@@ -145,6 +180,29 @@ void GPUSolverTest::TearDown() {
 
 //GPUSolverTest END
 
+//GPUSolverMultiParam START
+void GPUSolverMultiParam::SetUp()
+{
+    std::vector<int> nParams = {2};
+    int nRes = 4;
+    auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);
+    auto cost = std::make_shared<TestCostFunction>();
+    auto residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
+
+    solver = std::make_shared<GPUSolver>();
+    params1 = {0.5};
+    params2 = {0.5,0.5};
+//    params = {-2.60216,0.0318891};
+    std::vector<float*> initParams = {params.data()};
+    solver->addResidualFunction(residualFunc, initParams);
+}
+
+void GPUSolverMultiParam::TearDown() {
+//    cudaDeviceReset();
+}
+
+//GPUSolverMultiParam END
+
 //GPUSolverMultiResidual START
 void GPUSolverMultiResidual::SetUp()
 {
@@ -173,4 +231,4 @@ void GPUSolverMultiResidual::TearDown() {
 //    cudaDeviceReset();
 }
 
-//GPUSolverTest END
+//GPUSolverMultiResidual END

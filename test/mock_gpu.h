@@ -25,6 +25,15 @@ private:
     float* measurements_d;
 };
 
+class TestMultiParamCostFunction : public telef::solver::CostFunction {
+public:
+    TestMultiParamCostFunction();
+    virtual ~TestMultiParamCostFunction();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
+private:
+    float* measurements_d;
+};
+
 // A new one of these is created for each test
 class GPUResidualFunctionTest : public testing::Test
 {
@@ -61,6 +70,19 @@ public:
 
     telef::solver::GPUSolver::Ptr solver;
     std::vector<float> params;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+// A new one of these is created for each test
+class GPUSolverMultiParam : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    std::vector<float> params1;
+    std::vector<float> params2;
 
     virtual void SetUp();
     virtual void TearDown();
