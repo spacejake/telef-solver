@@ -15,7 +15,7 @@ Status Solver::solve() {
 
     Status status = Status::RUNNING;
 
-    initialize_solver();
+    initialize_run();
 
     //loop through each cost function, initialize all memory with results from given starting params
     float init_error = 0;

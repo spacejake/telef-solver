@@ -59,7 +59,10 @@ namespace telef::solver {
         Status solve();
     protected:
 
-        virtual void initialize_solver() = 0;
+        /**
+         * Must be called each run to initialize the solver
+         */
+        virtual void initialize_run() = 0;
         virtual void finalize_result() = 0;
 
         /****Interface to be implemented for CPU and GPU implementations****/

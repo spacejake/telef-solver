@@ -51,12 +51,31 @@ namespace telef::solver {
             return workingError;
         }
 
+
+        virtual float* getGradient(){
+            return gradient;
+        }
+
+        virtual float* getHessien(){
+            return hessian;
+        }
+
+        void initialize() override {
+            nEffectiveParams = 0;
+            for(auto param : parameterBlocks){
+                nEffectiveParams += param->numParameters();
+            }
+        };
+
     private:
         float* residuals;
         float* step;
         float* lambda;
 
         float* workingError;
+
+        float* gradient;
+        float* hessian;
 
         void initialize(const int& nRes){
             utils::CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
