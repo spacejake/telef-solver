@@ -94,6 +94,61 @@ void calc_jacobiSimple(float *jacobians, const float *params, const int nRes, co
 /***************************************************/
 
 __global__
+void _calc_resSimple2(float *residuals, const float *params, const float *measurements,
+                     const int nRes, const int nParams) {
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+    float a2 = params[0]*params[0];
+    float b = params[1];
+
+    // grid-striding loop
+    for (int i = start_index; i < nRes; i += stride) {
+        float y = a2 * b;
+        residuals[i] = y - measurements[i];
+        //printf("Element: %.2f\n", residuals[i]);
+    }
+}
+
+void calc_resSimple2(float *residuals, const float *params, const float *measurements,
+                    const int nRes, const int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _calc_resSimple2 << < dimGrid, dimBlock >> > (residuals, params, measurements, nRes, nParams);
+    cudaDeviceSynchronize();
+}
+
+__global__
+void _calc_jacobiSimple2(float *jacobians, const float *params, const int nRes, const int nParams) {
+    // TODO: document column order for jacobians, perhaps give option to switch between.
+    // Must Compute Jacobians in Column order!!!!, Due to cublas dependancy
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+    float a = params[0];
+    float b = params[1];
+    float da = 2*a*b;
+    float db = a*a;
+
+    // grid-striding loop
+    for (int i = start_index; i < nRes; i += stride) {
+        // residuals cumputed are f(x) - y, dx = f'(x), y is measurement
+        jacobians[0] = da;
+        jacobians[1] = db;
+    }
+}
+
+void calc_jacobiSimple2(float *jacobians, const float *params, const int nRes, const int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _calc_jacobiSimple2 << < dimGrid, dimBlock >> > (jacobians, params, nRes, nParams);
+    cudaDeviceSynchronize();
+}
+
+
+/***************************************************/
+
+__global__
 void _calc_res0(float *residuals, const float *params, const float *measurements,
                 const int nRes, const int nParams) {
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;

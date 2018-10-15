@@ -16,6 +16,17 @@ private:
     float* measurements_d;
 };
 
+
+class TestCostFunctionSimple2 : public telef::solver::CostFunction {
+public:
+    TestCostFunctionSimple2();
+    virtual ~TestCostFunctionSimple2();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
+private:
+    float* measurements_d;
+};
+
+
 class TestCostFunction : public telef::solver::CostFunction {
 public:
     TestCostFunction();

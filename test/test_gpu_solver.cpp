@@ -68,8 +68,8 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
-    vector<float> real_fit_params1 = {0, 0};
-    vector<float> real_fit_params2 = {0};
+    vector<float> real_fit_params1 = {-1.00897, 0.044994};
+    vector<float> real_fit_params2 = {1.52608};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -92,8 +92,12 @@ TEST_F(GPUSolverMultiResidual, MultiObjective) {
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
-    vector<float> real_fit_params1 = {0, 0};
-    vector<float> real_fit_params2 = {0};
+    // TODO: Shared
+//    vector<float> real_fit_params1 = {-2.13354, 2.19602};
+
+    // Independant: Our current best LS Error is 59.0, ceres is 22.5
+    vector<float> real_fit_params1 = {3.42431, -0.879273};
+    vector<float> real_fit_params2 = {1.56218, 4.09762};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.

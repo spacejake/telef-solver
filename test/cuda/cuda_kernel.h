@@ -22,6 +22,22 @@ void _calc_jacobiSimple(float *jacobians, const float *params, const int nRes, c
 
 void calc_jacobiSimple(float *jacobians, const float *params, const int nRes, const int nParams);
 
+
+
+__global__
+void _calc_resSimple2(float *residuals, const float *params, const float *measurements, const int nRes, const int nParams);
+
+void calc_resSimple2(float *residuals, const float *params, const float *measurements, const int nRes, const int nParams);
+
+
+
+__global__
+void _calc_jacobiSimple2(float *jacobians, const float *params, const int nRes, const int nParams);
+
+void calc_jacobiSimple2(float *jacobians, const float *params, const int nRes, const int nParams);
+
+
+
 __global__
 void _calc_res0(float *residuals, const float *params, const float *measurements, const int nRes, const int nParams);
 
