@@ -156,13 +156,13 @@ void calc_jacobi0(float *jacobians, const float *params, const int nRes, const i
 
 __global__
 void _calc_res2Params(float *residuals, const float *params1, const float *params2, const float *measurements,
-                const int nRes, const int nParams) {
+                const int nRes, const int nParams1, const int nParams2) {
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
     float a2 = params1[0]*params1[0];
     float b = params1[1];
 
-    float c3 = params2[0]*params2[0]*params2[0]
+    float c3 = params2[0]*params2[0]*params2[0];
 
     // grid-striding loop
     for (int i = start_index; i < nRes; i += stride) {
@@ -173,30 +173,39 @@ void _calc_res2Params(float *residuals, const float *params1, const float *param
 }
 
 void calc_res2Params(float *residuals, const float *params1, const float *params2, const float *measurements,
-               const int nRes, const int nParams) {
+               const int nRes, const int nParams1, const int nParams2) {
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
-    calc_res2Params << < dimGrid, dimBlock >> > (residuals, params1, params2, measurements, nRes, nParams);
+    _calc_res2Params << < dimGrid, dimBlock >> > (residuals, params1, params2, measurements, nRes, nParams1, nParams2);
     cudaDeviceSynchronize();
 }
 
 
 __global__
-void _calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params1, const float *params2, const int nRes, const int nParams) {
+void _calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params1, const float *params2,
+        const int nRes, const int nParams1, const int nParams2) {
     // TODO: document column order for jacobians, perhaps give option to switch between.
     // Must Compute Jacobians in Column order!!!!, Due to cublas dependancy
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
-    float a = params[0];
+    float a = params1[0];
     float a2 = a*a;
-    float b = params[1];
+    float b = params1[1];
 
-    float c = params[0];
+    float c = params2[0];
+    float c2 = c*c;
+    float c3 = c2*c;
 
+    // Final Cost = 61.0
+//    float da = 6*a*sin(7*b) + c3;
+//    float db = 21*a2*cos(7*b) + c3;
+//    float dc = 3*a2*cos(7*b) + 3*c2;
+
+    // Final Cost = 51.5
     float da = 6*a*sin(7*b);
     float db = 21*a2*cos(7*b);
-    float dc = 3*a2*cos(7*b) + 3*c*c;
+    float dc = 3*c2;
 
     // grid-striding loop
     for (int i = start_index; i < nRes; i += stride) {
@@ -208,10 +217,10 @@ void _calc_jacobi2Params(float *jacobians, float *jacobians2, const float *param
     }
 }
 
-void calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params1, const float *params2, const int nRes, const int nParams) {
+void calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params1, const float *params2, const int nRes, const int nParams1, const int nParams2) {
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
-    _calc_jacobi2Params << < dimGrid, dimBlock >> > (jacobians, float *jacobians2, params1, params2, nRes, nParams);
+    _calc_jacobi2Params << < dimGrid, dimBlock >> > (jacobians, jacobians2, params1, params2, nRes, nParams1, nParams2);
     cudaDeviceSynchronize();
 }

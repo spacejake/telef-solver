@@ -51,12 +51,12 @@ void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool com
 //TestCostFunction END
 
 //TestMultiParamCostFunction START
-TestMultiParamCostFunction::TestCostFunction(){
+TestMultiParamCostFunction::TestMultiParamCostFunction(){
     float measurements[] = {10,3,4,1};
     CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
 
-TestMultiParamCostFunction::~TestCostFunction(){
+TestMultiParamCostFunction::~TestMultiParamCostFunction(){
     CUDA_FREE(measurements_d);
 }
 
@@ -64,24 +64,14 @@ void TestMultiParamCostFunction::evaluate(ResidualBlock::Ptr residualBlock, cons
     ParameterBlock::Ptr params1 = residualBlock->getParameterBlocks()[0];
     ParameterBlock::Ptr params2 = residualBlock->getParameterBlocks()[1];
 
-    calc_res0(residualBlock->getResiduals(), params1->getWorkingParameters(), measurements_d,
-              residualBlock->numResiduals(), params1->numParameters());
+    calc_res2Params(residualBlock->getResiduals(), params1->getWorkingParameters(), params2->getWorkingParameters(),
+            measurements_d, residualBlock->numResiduals(), params1->numParameters(), params2->numParameters());
 
     if (computeJacobians) {
-        calc_jacobi0(params1->getJacobians(), params1->getWorkingParameters(),
-                     residualBlock->numResiduals(), params1->numParameters());
+        calc_jacobi2Params(params1->getJacobians(), params2->getJacobians(),
+                params1->getWorkingParameters(), params2->getWorkingParameters(),
+                residualBlock->numResiduals(), params1->numParameters(), params2->numParameters());
     }
-
-
-    calc_res0(residualBlock->getResiduals(), params2->getWorkingParameters(), measurements_d,
-              residualBlock->numResiduals(), params2->numParameters());
-
-    if (computeJacobians) {
-        calc_jacobi0(params2->getJacobians(), params2->getWorkingParameters(),
-                     residualBlock->numResiduals(), params2->numParameters());
-    }
-
-
 }
 //TestMultiParamCostFunction END
 
@@ -183,17 +173,17 @@ void GPUSolverTest::TearDown() {
 //GPUSolverMultiParam START
 void GPUSolverMultiParam::SetUp()
 {
-    std::vector<int> nParams = {2};
+    std::vector<int> nParams = {2,1};
     int nRes = 4;
     auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);
-    auto cost = std::make_shared<TestCostFunction>();
+    auto cost = std::make_shared<TestMultiParamCostFunction>();
     auto residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
 
     solver = std::make_shared<GPUSolver>();
-    params1 = {0.5};
-    params2 = {0.5,0.5};
-//    params = {-2.60216,0.0318891};
-    std::vector<float*> initParams = {params.data()};
+    params1 = {0.5,0.5};
+    params2 = {0.5};
+
+    std::vector<float*> initParams = {params1.data(), params2.data()};
     solver->addResidualFunction(residualFunc, initParams);
 }
 
