@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include "solver/residualBlock.h"
 
 namespace telef::solver {
     class ParameterBlock {
@@ -41,9 +42,19 @@ namespace telef::solver {
             return nResiduals;
         }
 
+        bool isShared(){
+            return shared;
+        }
+
     protected:
         int nResiduals;
         float* resultParameters;
         int nParameters;
+
+        // Shared Parameters will have same Pointer to parameter and global gradient,
+        // but different offsets in global Jacobian
+        bool shared;
+        std::shared_ptr<ParameterBlock::Ptr> shared_parameter;
+//        int shared_owner_index;
     };
 }

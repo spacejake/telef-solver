@@ -152,6 +152,7 @@ void GPUResidualFunctionTest::initJacobians(){
 //GPUSolverTestSimple START
 void GPUSolverTestSimple::SetUp()
 {
+
     std::vector<int> nParams = {1};
     int nRes = 1;
     auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);

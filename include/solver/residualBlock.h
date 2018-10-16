@@ -11,7 +11,7 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<ResidualBlock>;
         using ConstPtr = std::shared_ptr<const ResidualBlock>;
 
-        ResidualBlock(const int nRes): nEffectiveParams(0), error(0.0f), nResiduals(nRes) {}
+        ResidualBlock(const int nRes): nEffectiveParams(0), offest(0), error(0.0f), nResiduals(nRes) {}
         virtual ~ResidualBlock(){}
 
         virtual float* getResiduals() = 0;
@@ -67,6 +67,7 @@ namespace telef::solver {
 
     protected:
         int nEffectiveParams;
+        int offest; // Memory offest in Global space
 
         float error;
         int nResiduals;
