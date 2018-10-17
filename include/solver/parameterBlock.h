@@ -4,15 +4,26 @@
 #include "solver/residualBlock.h"
 
 namespace telef::solver {
+//    using Parameters = struct Parameters {
+//        float* workingParameters;
+//        float* parameters;
+//        int nParameters;
+//        int offset;
+//    };
+
     class ParameterBlock {
     public:
         using Ptr = std::shared_ptr<ParameterBlock>;
         using ConstPtr = std::shared_ptr<const ParameterBlock>;
 
         ParameterBlock(const int nRes, const int nParams)
-                : nResiduals(nRes), nParameters(nParams){}
+                : nResiduals(nRes), nParameters(nParams),
+                resultParameters(NULL), shared_parameter(nullptr),
+                offset(0), paramBlockIndex(0) {}
 
-        virtual ~ParameterBlock(){}
+        virtual ~ParameterBlock(){
+            //Subclasses must Destroy their pointers
+        }
 
         virtual void setInitialParams(float* initialParams_) {
             resultParameters = initialParams_;
@@ -25,36 +36,84 @@ namespace telef::solver {
         virtual void initializeParameters() = 0;
         virtual float* getWorkingParameters() = 0;
         virtual float* getParameters() = 0;
-        virtual float* getDeltaParameters() = 0;
-
-        virtual float* getDampeningFactors() = 0;
 
         virtual float* getJacobians() = 0;
         virtual float* getGradients() = 0;
-        virtual float* getHessians() = 0;
-        virtual float* getHessianLowTri() = 0;
 
-        int numParameters() {
+        const int numParameters() const {
             return nParameters;
         }
 
-        int numResiduals() {
+        const int numResiduals() const {
             return nResiduals;
         }
 
-        bool isShared(){
-            return shared;
+        int getOffset() const {
+            if (isShared()){
+                shared_parameter->getOffset();
+            }
+            else {
+                return offset;
+            }
+        }
+
+        void setOffset(int offset_){
+            if (isShared()){
+                shared_parameter->setOffset(offset_);
+            }
+            else {
+                offset = offset_;
+            }
+        }
+
+        void share(ParameterBlock::Ptr original_parameter) {
+            assert(!original_parameter->isShared() && "original parameter must not be shared");
+
+            shared_parameter = std::move(original_parameter);
+            onShare();
+        }
+
+        virtual void onShare();
+
+        bool isShared() const {
+            return shared_parameter == nullptr;
+        }
+
+        ParameterBlock::Ptr getSharedParameter() const {
+            return shared_parameter;
+        }
+
+        const int getParamBlockIndex() const {
+            return paramBlockIndex;
+        }
+
+        void setParamBlockIndex(int idx){
+            if (isShared()){
+                shared_parameter->setParamBlockIndex(idx);
+            }
+            else {
+                paramBlockIndex = idx;
+            }
         }
 
     protected:
         int nResiduals;
-        float* resultParameters;
         int nParameters;
+        float* resultParameters;
+
+        // TODO: Transition to use a shared parameter block
+//        std::shared_ptr<Parameters> parameters;
 
         // Shared Parameters will have same Pointer to parameter and global gradient,
         // but different offsets in global Jacobian
-        bool shared;
-        std::shared_ptr<ParameterBlock::Ptr> shared_parameter;
+        ParameterBlock::Ptr shared_parameter;
 //        int shared_owner_index;
+
+    private:
+        // Offset in global parameter space for deltas, Gradiant, and Hessian
+        int offset;
+
+        // Index used in the global Jacobian Block structure
+        int paramBlockIndex;
     };
 }

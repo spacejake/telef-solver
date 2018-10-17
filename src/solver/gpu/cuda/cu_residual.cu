@@ -4,23 +4,20 @@
 
 
 void calc_gradients(cublasHandle_t cublasHandle, float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
-    //Compute -g(x)
-    cudaMatMul_ATxB(cublasHandle, gradients, jacobians, nRes, nParams, residuals, nRes, 1, -1.0f);
+    //Compute -g(x) + global_G(x)
+    cudaMatMul_ATxB(cublasHandle, gradients, jacobians, nRes, nParams, residuals, nRes, 1, -1.0f, 1.0f);
 }
 
 
 void calc_hessians(cublasHandle_t cublasHandle, float *hessians, float *jacobians, int nRes, int nParams){
-    cudaMatMul_ATxB(cublasHandle, hessians, jacobians, nRes, nParams, jacobians, nRes, nParams);
+    cudaMatMul_ATxB(cublasHandle, hessians, jacobians, nRes, nParams, jacobians, nRes, nParams, 0, 0);
 }
 
-void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC,
-                     const float *matA, int aRows, int aCols,
-                     const float *matB, int bRows, int bCols,
-                     const float alpha) {
+void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const float *matA, int aRows, int aCols, const float *matB,
+                     int bRows, int bCols, const float alpha, const float beta) {
 
     // Don't know what this is (scalar?) but examples use this
     cublasStatus_t status;
-    const float beta = 0;
 
     /* Perform operation using cublas, inputs/outputs are col-major.
      * vector and array were originally Eigen which defaults to Col-major

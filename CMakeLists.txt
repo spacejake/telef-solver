@@ -46,6 +46,7 @@ set( interfaceHdr
         include/solver/residualBlock.h
         include/solver/residualFunction.h
         include/solver/parameterBlock.h
+        include/solver/problem.h
 )
 
 set( interfaceSrc
@@ -58,6 +59,7 @@ set( gpuHdr
         include/solver/gpu/gpuResidualBlock.h
         include/solver/gpu/gpuResidualFunction.h
         include/solver/gpu/gpuSolver.h
+        include/solver/gpu/gpuProblem.h
 )
 
 

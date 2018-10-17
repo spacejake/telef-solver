@@ -11,7 +11,7 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<ResidualBlock>;
         using ConstPtr = std::shared_ptr<const ResidualBlock>;
 
-        ResidualBlock(const int nRes): nEffectiveParams(0), offest(0), error(0.0f), nResiduals(nRes) {}
+        ResidualBlock(const int nRes): offset(0), error(0.0f), nResiduals(nRes) {}
         virtual ~ResidualBlock(){}
 
         virtual float* getResiduals() = 0;
@@ -41,14 +41,6 @@ namespace telef::solver {
             parameterBlocks.push_back(param);
         }
 
-//        ParameterBlock::Ptr getParameterBlock(int idx) {
-//            return params[idx];
-//        }
-//
-//        int numParameters() {
-//            return params.size();
-//        };
-
         std::vector<ParameterBlock::Ptr>& getParameterBlocks() {
             return parameterBlocks;
         }
@@ -61,13 +53,17 @@ namespace telef::solver {
             }
         }
 
-        int numEffectiveParams(){
-            return nEffectiveParams;
+        int getOffset(){
+            return offset;
+        }
+
+        void setOffset(int offset_){
+            offset = offset_;
         }
 
     protected:
         int nEffectiveParams;
-        int offest; // Memory offest in Global space
+        int offset; // Memory offest in Global space
 
         float error;
         int nResiduals;

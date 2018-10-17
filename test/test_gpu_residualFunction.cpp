@@ -108,7 +108,7 @@ TEST(Matrix, gpu_multiply_ATxB) {
 
 //    print_array(A_d, rowA*colA);
 //    print_array(B_d, rowB*colB);
-    cudaMatMul_ATxB(cublasHandle, C_d, A_d, rowA, colA, B_d, rowB, colB);
+    cudaMatMul_ATxB(cublasHandle, C_d, A_d, rowA, colA, B_d, rowB, colB, 0, 0);
 
     cudaMemcpy(C, C_d, 2*sizeof(float), cudaMemcpyDeviceToHost);
     float real_C[] = {6, 12};
@@ -241,7 +241,7 @@ TEST_F(GPUResidualFunctionTest, evaluate) {
     int nRes = resBlock->numResiduals();
     int nParams = paramBlock->numParameters();
 
-    residualFunc->evaluate(true);
+    residualFunc->evaluate(nullptr, true);
 
     float residuals[4];
     float jacobians[8];

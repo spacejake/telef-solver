@@ -1,7 +1,7 @@
 #pragma once
 
 #include "solver/costFunction.h"
-#include "solver/residualFunction.h"
+#include "solver/problem.h"
 
 namespace telef::solver {
 
@@ -43,26 +43,15 @@ namespace telef::solver {
 
         virtual ~Solver(){};
 
-        void addResidualFunction(ResidualFunction::Ptr resFunc_,
-                                 const std::vector<float*> &params_){
-            resFunc_->setInitialParams(params_);
-            residualFuncs.push_back(resFunc_);
-        }
-
-
-        const std::vector<ResidualFunction::Ptr>& getResidualFunction() {
-            return residualFuncs;
-        }
-
         // Result can be obtained via the given ParameterBlocks.getParameters(),
         // the user gives the solver the working memory space
-        Status solve();
+        Status solve(Problem::Ptr problem);
     protected:
 
         /**
          * Must be called each run to initialize the solver
          */
-        virtual void initialize_run() = 0;
+        virtual void initialize_run(Problem::Ptr problem) = 0;
         virtual void finalize_result() = 0;
 
         /****Interface to be implemented for CPU and GPU implementations****/
@@ -94,9 +83,5 @@ namespace telef::solver {
 //        //TODO: functions to help evaluate convergence??
 //        virtual bool evaluateStep() = 0;
 //        virtual bool evaluateConvergence() = 0;
-
-    protected:
-        std::vector<ResidualFunction::Ptr> residualFuncs;
-        Status status;
     };
 }

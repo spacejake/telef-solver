@@ -19,7 +19,7 @@ namespace telef::solver {
 
         virtual ~ResidualFunction(){}
 
-        ResidualBlock::Ptr evaluate(bool evalJacobians_);
+        void evaluate(float *gradient, bool evalJacobians_);
 
         virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams) = 0;
         virtual void calcHessians(float* hessians, float* jacobians, int nRes, int nParams) = 0;
