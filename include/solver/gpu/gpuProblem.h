@@ -6,6 +6,7 @@
 #include "util/cudautil.h"
 
 #include "solver/problem.h"
+#include "solver/gpu/cuda/cu_resudual.h"
 
 namespace telef::solver {
     class GPUProblem : public Problem {
@@ -63,6 +64,20 @@ namespace telef::solver {
             utils::CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
         }
 
+        virtual void calculateHessianBlock(float *hessianBlock, float *jacobianA, float *jacobianB, int nResiduals, int nParameters) {
+            cudaMatMul_ATxB(cublasHandle, hessianBlock,
+                    jacobianA, nResiduals, nParameters,
+                    jacobianB, nResiduals, nParameters,
+                    1.0f, 1.0f);
+        }
+
+        void setCublasHandle(cublasHandle_t cublasHandle_){
+            cublasHandle = cublasHandle_;
+        }
+
+    protected:
+        cublasHandle_t cublasHandle;
+
     private:
         float* lambda;
         float* deltaParams;
@@ -72,5 +87,6 @@ namespace telef::solver {
         float* gradients;
         float* hessian;
         float* hessianLowTri;
+
     };
 }

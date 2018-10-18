@@ -10,7 +10,7 @@ void calc_gradients(cublasHandle_t cublasHandle, float *gradients, float *jacobi
 
 
 void calc_hessians(cublasHandle_t cublasHandle, float *hessians, float *jacobians, int nRes, int nParams){
-    cudaMatMul_ATxB(cublasHandle, hessians, jacobians, nRes, nParams, jacobians, nRes, nParams, 0, 0);
+    cudaMatMul_ATxB(cublasHandle, hessians, jacobians, nRes, nParams, jacobians, nRes, nParams);
 }
 
 void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const float *matA, int aRows, int aCols, const float *matB,

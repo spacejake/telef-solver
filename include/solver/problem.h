@@ -17,12 +17,40 @@ namespace telef::solver {
 
         float evaluate(bool evalJacobians_){
             for (auto resFunc : residualFuncs) {
-                ResidualBlock::Ptr resBlock = resFunc->evaluate(nullptr, true);
-
-
+                resFunc->evaluate(getGradient(), evalJacobians_);
             }
 
-            //TODO: Compute Global Gradient and Hessians
+            //TODO: Compute Global Hessian
+            int jBlkRow = 0;
+            for (auto resFunc : residualFuncs) {
+                for (int jBlkCol = 0; jBlkCol < nJacobianBlockCols; jBlkCol++) {
+                    // Compute upper triagle J()
+                    for (int i = 0; i < nJacobianBlockRows; i++) {
+                        auto paramT = getFromJBlock(i, jBlkRow);
+                        auto param = getFromJBlock(i, jBlkCol);
+                        if (paramT == nullptr || param == nullptr){
+                            // Skip block, will result in 0s since we add the result to the Global hessian
+                            continue;
+                        }
+
+//                        int resOffset = resFunc->getResidualBlock()->getOffset();
+                        int colOffset = paramT->getOffset();
+                        int rowOffset = param->getOffset();
+
+                        int hessianBlocklOffset = colOffset * nJacobianBlockRows + rowOffset;
+
+                        // J(i,row)' * J(i,col) will share same parameters and residuals
+                        calculateHessianBlock(getHessian() + hessianBlocklOffset,
+                                              paramT->getJacobians(), param->getJacobians(), paramT->numResiduals(),
+                                              paramT->numParameters());
+
+                        // TODO: Compute lower triagle
+//                        int hessianBlockTOffset = rowOffset * nJacobianBlockRows + colOffset;
+                    }
+                }
+                jBlkRow++;
+            }
+
         }
 
         float setError(float error_) {
@@ -132,6 +160,10 @@ namespace telef::solver {
             // Subclass initialization
             onInitialize();
         }
+
+        virtual void calculateHessianBlock(float *hessianBlock,
+                float *jacobianA, float *jacobianB,
+                int nResiduals, int nParameters);
 
         virtual float* getLambda() = 0;
 

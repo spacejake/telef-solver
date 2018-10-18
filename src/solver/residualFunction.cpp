@@ -23,6 +23,4 @@ void ResidualFunction::evaluate(float *gradient, bool evalJacobians_) {
 //                         residualBlock->numResiduals(), paramBlock->numParameters());
         }
     }
-
-    return residualBlock;
 }
