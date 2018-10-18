@@ -13,8 +13,17 @@ void calc_hessians(cublasHandle_t cublasHandle, float *hessians, float *jacobian
     cudaMatMul_ATxB(cublasHandle, hessians, jacobians, nRes, nParams, jacobians, nRes, nParams);
 }
 
-void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const float *matA, int aRows, int aCols, const float *matB,
-                     int bRows, int bCols, const float alpha, const float beta) {
+void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const float *matA, const int aRows, const int aCols,
+                     const float *matB, const int bRows, const int bCols, const float alpha, const float beta) {
+
+    cudaMatMul_ATxB(cublasHandle, matC, aCols,
+            matA, aRows, aCols,
+            matB, bRows, bCols,
+            alpha, beta);
+}
+
+void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const int cCols, const float *matA, int aRows, int aCols,
+        const float *matB, int bRows, int bCols, const float alpha, const float beta) {
 
     // Don't know what this is (scalar?) but examples use this
     cublasStatus_t status;
@@ -33,7 +42,7 @@ void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const float *matA
                         matA, aRows/*leading dim*/, //(mxk) or if A^T: (kxm)
                         matB, bRows/*leading dim*/, //(kxn)
                         &beta,
-                        matC, aCols/*leading dim*/); //(mxn)
+                        matC, cCols/*leading dim*/); //(mxn) unless C is a much larger matrix
 
     if (status != CUBLAS_STATUS_SUCCESS) {
         throw std::runtime_error("MatMul Failed\n");

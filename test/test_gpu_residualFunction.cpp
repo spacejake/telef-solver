@@ -16,6 +16,88 @@ using namespace std;
 using namespace testing;
 using namespace telef::solver;
 
+
+
+TEST(Matrix, gpu_multiply_ATxB_BlockAddC) {
+
+    cublasHandle_t cublasHandle;
+    if(cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
+        throw std::runtime_error("Cublas could not be initialized");
+    }
+
+//    float A[] = {1, 2,
+//                 1, 2,
+//                 1, 2};
+    float A[] = {2,2,2,
+                 3,3,3}; //(RxP)
+
+    float B[] = {1,1,1,
+                 2,2,2,
+                 3,3,3}; //(RxP)
+    float *A_d;
+    float *B_d;
+
+//    int rowA=3;
+//    int colA=2;
+//    int rowB=3;
+//    int colB=1;
+    int rowA=3;
+    int colA=2;
+    int rowB=3;
+    int colB=3;
+
+    //Rows C=2
+    //Cols C=1
+    float C[64];
+    float *C_d;
+    int rowC=8;
+    int colC=8;
+    utils::CUDA_MALLOC(&A_d, static_cast<size_t>(rowA*colA));
+    utils::CUDA_MALLOC(&B_d, static_cast<size_t>(rowB*colB));
+    utils::CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(rowC*colC));
+
+    cudaMemcpy(A_d, A, rowA*colA*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(B_d, B, rowB*colB*sizeof(float), cudaMemcpyHostToDevice);
+
+//    print_array(A_d, rowA*colA);
+//    print_array(B_d, rowB*colB);
+    int offset = 4 * colC + 2;
+    cudaMatMul_ATxB(cublasHandle, C_d + offset, colC, A_d, rowA, colA, B_d, rowB, colB, 1.0f, 1.0f);
+
+    cudaMemcpy(C, C_d, rowC*colC*sizeof(float), cudaMemcpyDeviceToHost);
+
+//    float real_C[] = {0, 0, 0, 0,
+//                      0, 6, 9, 0,
+//                      0, 12, 18, 0,
+//                      0, 18, 27, 0};
+
+    float real_C[] = {0, 0, 0, 0, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0, 0, 0, 0,
+                      0, 0, 6, 9, 0, 0, 0, 0,
+                      0, 0, 12, 18, 0, 0, 0, 0,
+                      0, 0, 18, 27, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0, 0, 0, 0 };
+
+//    float real_C[] = {0, 0, 0, 0, 0, 0,
+//                      0, 0, 0, 0, 0, 0,
+//                      0, 0, 0, 0, 0, 0,
+//                      0, 0, 6, 9, 0, 0,
+//                      0, 0, 12, 18, 0, 0,
+//                      0, 0, 18, 27, 0, 0};
+
+//    print_array(C_d, 2);
+    float ferr = 1e-4;
+    EXPECT_THAT(C,
+                Pointwise(FloatNear(ferr), real_C));
+
+    cudaFree(A_d);
+    cudaFree(B_d);
+    cudaFree(C_d);
+    cublasDestroy_v2(cublasHandle);
+}
+
 TEST(Matrix, gpu_multiply) {
 
     cublasHandle_t cublasHandle;
