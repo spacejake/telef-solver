@@ -7,6 +7,7 @@
 
 #include "solver/problem.h"
 #include "solver/gpu/cuda/cu_resudual.h"
+#include "solver/gpu/cuda/cu_solver.h"
 
 namespace telef::solver {
     class GPUProblem : public Problem {
@@ -16,6 +17,7 @@ namespace telef::solver {
 
         GPUProblem() : Problem() {}
         virtual ~GPUProblem() {
+            cudaFree(workingError);
             cudaFree(lambda);
             cudaFree(deltaParams);
             cudaFree(dampeningFactors);
@@ -24,9 +26,13 @@ namespace telef::solver {
             cudaFree(hessianLowTri);
         }
 
+        virtual float* getWorkingError() {
+            return workingError;
+        }
+
         virtual float* getLambda() {
             return lambda;
-        };
+        }
 
         // Global combined Matricies
         virtual float* getDeltaParameters() {
@@ -37,7 +43,7 @@ namespace telef::solver {
             return dampeningFactors;
         }
 
-        virtual float* getGradients() {
+        virtual float* getGradient() {
             return gradients;
         }
 
@@ -55,6 +61,7 @@ namespace telef::solver {
          */
         virtual void onInitialize() {
             // Allocate cuda space
+            utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
             utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
@@ -64,10 +71,12 @@ namespace telef::solver {
             utils::CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
         }
 
-        virtual void calculateHessianBlock(float *hessianBlock, float *jacobianA, float *jacobianB, int nResiduals, int nParameters) {
+        virtual void
+        calculateHessianBlock(float *hessianBlock, const int nEffectiveParams, const float *jacobianA, const int nParamsA,
+                                      const float *jacobianB, const int nParamsB, const int nResiduals) {
             cudaMatMul_ATxB(cublasHandle, hessianBlock,
-                    jacobianA, nResiduals, nParameters,
-                    jacobianB, nResiduals, nParameters,
+                    jacobianA, nResiduals, nParamsB,
+                    jacobianB, nResiduals, nParamsB,
                     1.0f, 1.0f);
         }
 
@@ -79,6 +88,8 @@ namespace telef::solver {
         cublasHandle_t cublasHandle;
 
     private:
+        float* workingError;
+
         float* lambda;
         float* deltaParams;
 

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <solver/gpu/gpuSolver.h>
+#include <solver/gpu/gpuProblem.h>
 #include "solver/gpu/gpuResidualFunction.h"
 
 class TestCostFunctionSimple : public telef::solver::CostFunction {
@@ -68,6 +69,7 @@ class GPUSolverTestSimple : public testing::Test
 public:
 
     telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
     std::vector<float> params;
 
     virtual void SetUp();
@@ -80,6 +82,7 @@ class GPUSolverTest : public testing::Test
 public:
 
     telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
     std::vector<float> params;
 
     virtual void SetUp();
@@ -92,6 +95,7 @@ class GPUSolverMultiParam : public testing::Test
 public:
 
     telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
     std::vector<float> params1;
     std::vector<float> params2;
 
@@ -105,6 +109,7 @@ class GPUSolverMultiResidual : public testing::Test
 public:
 
     telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
     std::vector<float> params1;
     std::vector<float> params2;
 

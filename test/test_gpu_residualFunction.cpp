@@ -284,34 +284,34 @@ TEST_F(GPUResidualFunctionTest, gradientTest) {
                 Pointwise(FloatNear(ferr), real_gradients));
 }
 
-TEST_F(GPUResidualFunctionTest, hessiansTest) {
-    initResiduals();
-    initJacobians();
-
-    ResidualBlock::Ptr resBlock = residualFunc->getResidualBlock();
-    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks()[0];
-
-    int nRes = resBlock->numResiduals();
-    int nParams = paramBlock->numParameters();
-
-//    print_array(paramBlock->getJacobians(), nParams*nRes);
-
-    residualFunc->calcHessians(paramBlock->getHessians(), paramBlock->getJacobians(),
-                                resBlock->numResiduals(), paramBlock->numParameters());
-//    print_array(paramBlock->getHessians(), nParams*nParams);
-
-    // size of nParams*nParams
-    float hessians[4];
-
-    cudaMemcpy(hessians, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
-    // column-Order, psst. this mat is same regardless, lol
-    float real_hessians[] = {4.42934,  20.6941,
-                             20.6941, 96.684};
-
-    float ferr = 1e-4;
-    EXPECT_THAT(hessians,
-                Pointwise(FloatNear(ferr), real_hessians));
-}
+//TEST_F(GPUResidualFunctionTest, hessiansTest) {
+//    initResiduals();
+//    initJacobians();
+//
+//    ResidualBlock::Ptr resBlock = residualFunc->getResidualBlock();
+//    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks()[0];
+//
+//    int nRes = resBlock->numResiduals();
+//    int nParams = paramBlock->numParameters();
+//
+////    print_array(paramBlock->getJacobians(), nParams*nRes);
+//
+//    residualFunc->calcHessians(paramBlock->getHessians(), paramBlock->getJacobians(),
+//                                resBlock->numResiduals(), paramBlock->numParameters());
+////    print_array(paramBlock->getHessians(), nParams*nParams);
+//
+//    // size of nParams*nParams
+//    float hessians[4];
+//
+//    cudaMemcpy(hessians, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+//    // column-Order, psst. this mat is same regardless, lol
+//    float real_hessians[] = {4.42934,  20.6941,
+//                             20.6941, 96.684};
+//
+//    float ferr = 1e-4;
+//    EXPECT_THAT(hessians,
+//                Pointwise(FloatNear(ferr), real_hessians));
+//}
 
 
 
@@ -333,14 +333,14 @@ TEST_F(GPUResidualFunctionTest, evaluate) {
     cudaMemcpy(residuals, resBlock->getResiduals(), nRes*sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(jacobians, paramBlock->getJacobians(), nRes*nParams*sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(gradients, paramBlock->getGradients(), nParams*sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(hessiens, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
+//    cudaMemcpy(hessiens, paramBlock->getHessians(), nParams*nParams*sizeof(float), cudaMemcpyDeviceToHost);
 
     float real_res[] = {-10.2631, -3.2631, -4.2631, -1.2631};
     float real_jacobi[] = {-1.0523, -1.0523, -1.0523, -1.0523,
                            -4.9164, -4.9164, -4.9164, -4.9164};
     float real_gradients[] = {-20.0488, -93.6692};
-    float real_hessiens[] = {4.42934,  20.6941,
-                             20.6941, 96.684};
+//    float real_hessiens[] = {4.42934,  20.6941,
+//                             20.6941, 96.684};
 
 
     float ferr = 1e-3;
@@ -350,6 +350,6 @@ TEST_F(GPUResidualFunctionTest, evaluate) {
                 Pointwise(FloatNear(ferr), real_jacobi));
     EXPECT_THAT(gradients,
                 Pointwise(FloatNear(ferr), real_gradients));
-    EXPECT_THAT(hessiens,
-                Pointwise(FloatNear(ferr), real_hessiens));
+//    EXPECT_THAT(hessiens,
+//                Pointwise(FloatNear(ferr), real_hessiens));
 }

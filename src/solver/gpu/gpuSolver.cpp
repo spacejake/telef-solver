@@ -7,6 +7,7 @@
 
 #include "util/cudautil.h"
 #include "solver/gpu/gpuSolver.h"
+#include "solver/gpu/gpuProblem.h"
 #include "solver/gpu/gpuResidualFunction.h"
 
 using namespace telef::solver;
@@ -15,22 +16,43 @@ float GPUSolver::calcError(float *error, const float *residuals, const int nRes)
     // TODO: Use Residual based error, use error_d as total error for all residuals
     float error_h = 0;
     //Reset to 0
-    cudaMemset(error_d,0, sizeof(float));
-    calc_error(error_d, residuals, nRes);
+    cudaMemset(error,0, sizeof(float));
+    calc_error(error, residuals, nRes);
 
-    cudaMemcpy(&error_h, error_d, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&error_h, error, sizeof(float), cudaMemcpyDeviceToHost);
     return error_h;
 }
 
 
-void GPUSolver::initialize_solver() {
-
+void GPUSolver::initialize_run(Problem::Ptr problem) {
+    //cudaDeviceReset();
     // Initialize step factors
     float downFactor = 1 / options.step_down;
     cudaMemcpy(down_factor_d, &downFactor, sizeof(float), cudaMemcpyHostToDevice );
     cudaMemcpy(up_factor_d, &options.step_up, sizeof(float), cudaMemcpyHostToDevice );
 
     float inital_step = options.lambda_initial;
+
+    auto residualFuncs = problem->getResidualFunctions();
+
+    std::shared_ptr<GPUProblem> gpuProblem = std::dynamic_pointer_cast<GPUProblem>(problem);
+    if (gpuProblem != nullptr) {
+        gpuProblem->setCublasHandle(cublasHandle);
+    }
+
+    // Iitialize step values
+    float* lambda = problem->getLambda();
+
+    //Initialize Total Error
+    float* problemWorkError = problem->getWorkingError();
+
+    CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemset(problemWorkError, 0, sizeof(float)));
+
+    // Initialize Dampening Factors
+    float* dampeningFactors = problem->getDampeningFactors();
+    CUDA_CHECK(cudaMemset(dampeningFactors, 0, problem->numEffectiveParams()*sizeof(float)));
+
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
         std::shared_ptr<GPUResidualFunction> gpuResFunc = std::dynamic_pointer_cast<GPUResidualFunction>(resFunc);
         if (gpuResFunc != nullptr) {
@@ -39,38 +61,28 @@ void GPUSolver::initialize_solver() {
 
         // Iitialize step values
         auto resBlock = resFunc->getResidualBlock();
-        float* lambda = resBlock->getLambda();
-        float* step = resBlock->getStep();
         float* workError = resBlock->getWorkingError();
 
-        CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(step, &inital_step, sizeof(float), cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
-
-
 
         //TODO: Initialize Parameters in init step, currently in setInitialParams
         //      This is so CPU? and GPU implementations can copy parameters to working params or on to GPU
 //        for(auto paramBlock : resBlock->getParameterBlocks()) {
 //            paramBlock->initializeParameters();
 //        }
-        for(auto paramBlock : resBlock->getParameterBlocks()){
-            // Copys Results from GPU onto CPU into user maintained parameter array.
-            float* dampeningFactors = paramBlock->getDampeningFactors();
-            CUDA_CHECK(cudaMemset(dampeningFactors, 0, paramBlock->numParameters()*sizeof(float)));
-        }
     }
 
-    //Initialize Total Error
-    CUDA_CHECK(cudaMemset(error_d, 0, sizeof(float)));
 }
 
-void GPUSolver::finalize_result() {
+void GPUSolver::finalize_result(Problem::Ptr problem) {
+    auto residualFuncs = problem->getResidualFunctions();
     for(auto resFunc : residualFuncs) {
         auto resBlock = resFunc->getResidualBlock();
         for(auto paramBlock : resBlock->getParameterBlocks()){
-            // Copys Results from GPU onto CPU into user maintained parameter array.
-            paramBlock->getResultParameters();
+            if (!paramBlock->isShared()) {
+                // Copys Results from GPU onto CPU into user maintained parameter array.
+                paramBlock->getResultParameters();
+            }
         }
     }
 }
@@ -84,8 +96,13 @@ void GPUSolver::updateStep(float* lambda, bool goodStep) {
 }
 
 void
-GPUSolver::updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodSteap) {
-    update_hessians(hessians, dampeningFactors, lambda, nParams,goodSteap);
+GPUSolver::updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep) {
+    print_array("updateHessians::hessians::before", hessians, nParams*nParams);
+    print_array("updateHessians::dampeningFactors::before", dampeningFactors, nParams);
+    print_array("updateHessians::lambda", lambda, 1);
+    update_hessians(hessians, dampeningFactors, lambda, nParams, goodStep);
+    print_array("updateHessians::hessians::after", hessians, nParams*nParams);
+    print_array("updateHessians::dampeningFactors::after", dampeningFactors, nParams);
 }
 
 /**
@@ -117,9 +134,11 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
 bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const float *hessians, const float *gradients, const int nParams) {
 
 
+    print_array("solveSystem::hessians", hessians, nParams*nParams);
     // Copy hessians(A) to hessianLowTri(will be L), since it is inplace decomposition, for A=LL*
     CUDA_CHECK(cudaMemcpy(hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 //    print_array("InitL:", hessianLowTri, nParams*nParams);
+    print_array("solveSystem::hessianLowTri", hessians, nParams*nParams);
 
     // Copy gradients(x) to deltaParams(will be b), since it shares the same in/out param, for Ax=b
     CUDA_CHECK(cudaMemcpy(deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));

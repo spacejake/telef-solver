@@ -22,7 +22,7 @@ using Clock=std::chrono::high_resolution_clock;
 
 
 __global__
-void _print_arr(float *arr_d, int n) {
+void _print_arr(const float *arr_d, const int n) {
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
 
@@ -35,7 +35,7 @@ void _print_arr(float *arr_d, int n) {
     }
 }
 
-void print_array(const char* msg, float *arr_d, int n) {
+void print_array(const char* msg, const float *arr_d, const int n) {
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((n + BLOCKSIZE - 1) / BLOCKSIZE);
 
@@ -136,6 +136,8 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
 
+    printf("_update_hessians:in");
+
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
         int diagonal_index = i+nParams*i;
@@ -159,7 +161,7 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
 
         hessians[diagonal_index] += dampeningFactors[i] * lambda[0];
 
-//        printf("hessians[%d][%d]: %.4f\n",i, i, hessians[i+nParams*i]);
+        printf("_update_hessians:hessians[%d][%d]: %.4f\n",i, i, hessians[diagonal_index]);
     }
 }
 
@@ -167,9 +169,10 @@ void update_hessians(float *hessians, float *dampeningFactors, float *lambda, in
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
+    printf("update_hessians:block[%d] grid[%d] n: %.d\n",BLOCKSIZE, ((nParams + BLOCKSIZE - 1) / BLOCKSIZE), nParams);
     _update_hessians << < dimGrid, dimBlock >> >(hessians, dampeningFactors, lambda, nParams, goodStep);
     cudaDeviceSynchronize();
-//    print_array("New Hessian",hessians, nParams*nParams);
+    print_array("New Hessian",hessians, nParams*nParams);
 
 }
 
@@ -248,7 +251,7 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
                            matA, n, lda);
 
     cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
-
+    print_array("decompose_cholesky:Hessian:before", matA, n);
     // Compute A = L*LH, result in matA in lower triangular form
 //    auto t1 = Clock::now();
     cusolver_status =
@@ -256,6 +259,7 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
                              n, matA, lda,
                              buffer_d, buffer_size,
                              info_d );
+    print_array("decompose_cholesky:Decomposed Hessian:after", matA, n);
 //    print_array("L",matA,n*n);
 //    cudaDeviceSynchronize();
 //    auto t2 = Clock::now();

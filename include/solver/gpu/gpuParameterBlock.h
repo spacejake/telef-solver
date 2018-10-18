@@ -42,21 +42,21 @@ namespace telef::solver {
         virtual float* getResultParameters() {
             cudaMemcpy(resultParameters, getParameters(), nParameters*sizeof(float), cudaMemcpyDeviceToHost);
             return resultParameters;
-        };
+        }
 
         virtual float* getWorkingParameters(){
             if (isShared()) {
-                return workingParameters;
-            } else {
                 return shared_parameter->getWorkingParameters();
+            } else {
+                return workingParameters;
             }
         }
 
         virtual float* getParameters(){
             if (isShared()) {
-                return parameters;
-            } else {
                 return shared_parameter->getParameters();
+            } else {
+                return parameters;
             }
         }
 
@@ -82,12 +82,13 @@ namespace telef::solver {
         float* gradients;
 
     private:
-        void initDeviceMemory(){
+        void initDeviceMemory() {
 //            printf("ParamBlock with Res:%d and Params:%d\n", nRes, nParams);
             utils::CUDA_ALLOC_AND_ZERO(&workingParameters, static_cast<size_t>(numParameters()));
             utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(numParameters()));
 
             utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(numParameters() * numResiduals()));
             utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(numParameters()));
+        }
     };
 }

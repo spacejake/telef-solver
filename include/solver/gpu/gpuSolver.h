@@ -13,7 +13,7 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<GPUSolver>;
         using ConstPtr = std::shared_ptr<const GPUSolver>;
         //TODO: Add params for Cublas handler. What does Cusolver need?
-        GPUSolver():Solver(){
+        GPUSolver() : Solver(){
             initHandlers();
             initDeviceMemory();
         }
@@ -24,7 +24,6 @@ namespace telef::solver {
         }
 
         virtual ~GPUSolver(){
-            cudaFree(error_d);
             cudaFree(down_factor_d);
             cudaFree(up_factor_d);
 
@@ -33,15 +32,14 @@ namespace telef::solver {
         }
 
     protected:
-        float *error_d;
         float *down_factor_d;
         float *up_factor_d;
         cusolverDnHandle_t solver_handle;
         cublasHandle_t cublasHandle;
 
-        virtual void initialize_solver();
+        virtual void initialize_run(Problem::Ptr problem);
 
-        virtual void finalize_result();
+        virtual void finalize_result(Problem::Ptr problem);
 
         virtual float calcError(float *error, const float *residuals, const int nRes);
 
@@ -55,7 +53,7 @@ namespace telef::solver {
 
         // Step Functions
         virtual void
-        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodSteap);
+        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep);
 
         virtual void updateStep(float* lambda, bool goodStep);
 
@@ -68,7 +66,6 @@ namespace telef::solver {
         }
 
         void initDeviceMemory(){
-            utils::CUDA_ALLOC_AND_ZERO(&error_d, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&down_factor_d, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&up_factor_d, static_cast<size_t>(1));
         }

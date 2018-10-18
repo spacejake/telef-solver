@@ -162,7 +162,10 @@ void GPUSolverTestSimple::SetUp()
     solver = std::make_shared<GPUSolver>();
     params = {0.5f};
     std::vector<float*> initParams = {params.data()};
-    solver->addResidualFunction(residualFunc, initParams);
+
+    problem = std::make_shared<GPUProblem>();
+    problem->addResidualFunction(residualFunc, initParams);
+    //problem->initialize();
 }
 
 void GPUSolverTestSimple::TearDown() {
@@ -184,7 +187,10 @@ void GPUSolverTest::SetUp()
     params = {0.5,0.5};
 //    params = {-2.60216,0.0318891};
     std::vector<float*> initParams = {params.data()};
-    solver->addResidualFunction(residualFunc, initParams);
+
+    problem = std::make_shared<GPUProblem>();
+    problem->addResidualFunction(residualFunc, initParams);
+    problem->initialize();
 }
 
 void GPUSolverTest::TearDown() {
@@ -207,7 +213,10 @@ void GPUSolverMultiParam::SetUp()
     params2 = {0.5};
 
     std::vector<float*> initParams = {params1.data(), params2.data()};
-    solver->addResidualFunction(residualFunc, initParams);
+
+    problem = std::make_shared<GPUProblem>();
+    problem->addResidualFunction(residualFunc, initParams);
+    problem->initialize();
 }
 
 void GPUSolverMultiParam::TearDown() {
@@ -228,7 +237,9 @@ void GPUSolverMultiResidual::SetUp()
     auto residualFunc2 = std::make_shared<GPUResidualFunction>(cost2, resBlock2, 1.0);
     params2 = {0.5,0.5};
     std::vector<float*> initParams2 = {params2.data()};
-    solver->addResidualFunction(residualFunc2, initParams2);
+
+    problem = std::make_shared<GPUProblem>();
+    problem->addResidualFunction(residualFunc2, initParams2);
 
     std::vector<int> nParams1 = {2};
     int nRes1 = 1;
@@ -237,7 +248,8 @@ void GPUSolverMultiResidual::SetUp()
     auto residualFunc1 = std::make_shared<GPUResidualFunction>(cost1, resBlock1, 1.0);
     params1 = {0.5f,0.5};
     std::vector<float*> initParams1 = {params1.data()};
-    solver->addResidualFunction(residualFunc1, initParams1);
+    problem->addResidualFunction(residualFunc1, initParams1);
+    problem->initialize();
 }
 
 void GPUSolverMultiResidual::TearDown() {

@@ -52,7 +52,7 @@ namespace telef::solver {
          * Must be called each run to initialize the solver
          */
         virtual void initialize_run(Problem::Ptr problem) = 0;
-        virtual void finalize_result() = 0;
+        virtual void finalize_result(Problem::Ptr problem) = 0;
 
         /****Interface to be implemented for CPU and GPU implementations****/
         /**
@@ -76,7 +76,7 @@ namespace telef::solver {
 
         // Step Functions
         virtual void
-        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodSteap) = 0;
+        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep) = 0;
 
         virtual void updateStep(float* lambda, bool goodStep) = 0;
 

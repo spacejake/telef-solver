@@ -4,7 +4,7 @@
 #include <cusolverDn.h>
 
 
-void print_array(const char* msg, float *arr_d, int n);
+void print_array(const char* msg, const float *arr_d, const int n);
 
 __global__
 void _calc_error(float* error, const float* residuals, const int nRes);

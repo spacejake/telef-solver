@@ -27,7 +27,7 @@ TEST_F(GPUSolverTestSimple, solve1) {
 //    solver->options.max_iterations = 500;
 //    solver->options.verbose = true;
 
-    Status status = solver->solve();
+    Status status = solver->solve(problem);
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
@@ -36,13 +36,13 @@ TEST_F(GPUSolverTestSimple, solve1) {
     EXPECT_THAT(params,
                 Pointwise(FloatNear(ferr), real_fit_params));
 }
-//
+
 //TEST_F(GPUSolverTest, solve2) {
 ////    solver->options.max_iterations = 500;
 ////    solver->options.target_error_change = 1e-6;
 ////    solver->options.verbose = true;
 //
-//    Status  status = solver->solve();
+//    Status  status = solver->solve(problem);
 //
 //    EXPECT_TRUE(Status::CONVERGENCE == status);
 //
@@ -64,7 +64,7 @@ TEST_F(GPUSolverTestSimple, solve1) {
 ////    solver->options.target_error_change = 1e-6;
 //    solver->options.verbose = true;
 //
-//    Status  status = solver->solve();
+//    Status  status = solver->solve(problem);
 //
 //    EXPECT_TRUE(Status::CONVERGENCE == status);
 //
@@ -88,7 +88,7 @@ TEST_F(GPUSolverTestSimple, solve1) {
 ////    solver->options.target_error_change = 1e-6;
 //    solver->options.verbose = true;
 //
-//    Status  status = solver->solve();
+//    Status  status = solver->solve(problem);
 //
 //    EXPECT_TRUE(Status::CONVERGENCE == status);
 //

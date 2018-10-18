@@ -17,6 +17,8 @@ Status Solver::solve(Problem::Ptr problem) {
 
     Status status = Status::RUNNING;
 
+    // TODO: add flag?
+    problem->initialize();
     initialize_run(problem);
 
     //loop through each cost function, initialize all memory with results from given starting params
@@ -38,9 +40,6 @@ Status Solver::solve(Problem::Ptr problem) {
     // Delta error, between current params and new params we step too
     float iterDerr = 0;
     bool prev_good_iteration = false;
-
-    //TODO: Use just one
-    float* lambda = residualFuncs[0]->getResidualBlock()->getLambda();
 
     int iter;
     for (iter = 0; iter < options.max_iterations; ++iter) {
@@ -65,8 +64,8 @@ Status Solver::solve(Problem::Ptr problem) {
          */
         // Solves delta = -(H(x) + lambda * I)^-1 * g(x), x+1 = x + delta
         bool solveSystemSuccess = solveSystem(problem->getDeltaParameters(), problem->getHessianLowTri(),
-                                         problem->getHessian(), problem->getGradient(),
-                                         problem->numEffectiveParams());
+                problem->getHessian(), problem->getGradient(),
+                problem->numEffectiveParams());
 
         // If the system of equations failed to be evaluated with current step, make another step and try again.
         if (solveSystemSuccess) {
@@ -169,7 +168,7 @@ Status Solver::solve(Problem::Ptr problem) {
         prev_good_iteration = good_iteration;
     }
 
-    finalize_result();
+    finalize_result(telef::solver::Problem::Ptr());
 
     if (options.verbose) {
         std::stringstream logmsg;

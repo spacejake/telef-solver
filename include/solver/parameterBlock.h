@@ -18,7 +18,7 @@ namespace telef::solver {
 
         ParameterBlock(const int nRes, const int nParams)
                 : nResiduals(nRes), nParameters(nParams),
-                resultParameters(NULL), shared_parameter(nullptr),
+                resultParameters(nullptr), shared_parameter(),
                 offset(0), paramBlockIndex(0) {}
 
         virtual ~ParameterBlock(){
@@ -73,10 +73,10 @@ namespace telef::solver {
             onShare();
         }
 
-        virtual void onShare();
+        virtual void onShare() = 0;
 
         bool isShared() const {
-            return shared_parameter == nullptr;
+            return shared_parameter != nullptr;
         }
 
         ParameterBlock::Ptr getSharedParameter() const {

@@ -15,15 +15,9 @@ namespace telef::solver {
         virtual ~ResidualBlock(){}
 
         virtual float* getResiduals() = 0;
-        virtual float* getStep() = 0;
-        virtual float* getLambda() = 0;
-
         virtual float* getWorkingError() = 0;
 
-        virtual float* getGradient() = 0;
-        virtual float* getHessian() = 0;
-
-        virtual void initialize() = 0;
+//        virtual void initialize() = 0;
 
         float setError(float error_) {
             error = error_;
@@ -62,7 +56,6 @@ namespace telef::solver {
         }
 
     protected:
-        int nEffectiveParams;
         int offset; // Memory offest in Global space
 
         float error;

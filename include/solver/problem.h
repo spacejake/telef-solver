@@ -2,8 +2,9 @@
 
 #include <memory>
 #include <vector>
+#include <cuda_runtime.h>
 
-#include <solver/residualFunction.h>
+#include "solver/residualFunction.h"
 
 namespace telef::solver {
     class Problem {
@@ -16,41 +17,52 @@ namespace telef::solver {
         virtual ~Problem(){}
 
         float evaluate(bool evalJacobians_){
+            if (evalJacobians_) {
+                // Set Global Gradients and Hessian to zero
+                cudaMemset(getGradient(), 0, nEffectiveParams*sizeof(float));
+                cudaMemset(getHessian(), 0, nEffectiveParams*nEffectiveParams*sizeof(float));
+
+            }
+
             for (auto resFunc : residualFuncs) {
                 resFunc->evaluate(getGradient(), evalJacobians_);
             }
 
-            //TODO: Compute Global Hessian
-            int jBlkRow = 0;
-            for (auto resFunc : residualFuncs) {
-                for (int jBlkCol = 0; jBlkCol < nJacobianBlockCols; jBlkCol++) {
-                    // Compute upper triagle J()
-                    for (int i = 0; i < nJacobianBlockRows; i++) {
-                        auto paramT = getFromJBlock(i, jBlkRow);
-                        auto param = getFromJBlock(i, jBlkCol);
-                        if (paramT == nullptr || param == nullptr){
-                            // Skip block, will result in 0s since we add the result to the Global hessian
-                            continue;
-                        }
+            if (evalJacobians_) {
+                //TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
+                int jBlkRow = 0;
+                for (auto resFunc : residualFuncs) {
+                    for (int jBlkCol = 0; jBlkCol < nJacobianBlockCols; jBlkCol++) {
+                        for (int i = 0; i < nJacobianBlockRows; i++) {
+                            auto paramT = getFromJBlock(i, jBlkRow);
+                            auto param = getFromJBlock(i, jBlkCol);
+                            if (paramT == nullptr || param == nullptr) {
+                                // Skip block, will result in 0s since we add the result to the Global hessian
+                                continue;
+                            }
 
-//                        int resOffset = resFunc->getResidualBlock()->getOffset();
-                        int colOffset = paramT->getOffset();
-                        int rowOffset = param->getOffset();
+                            int colOffset = paramT->getOffset();
+                            int rowOffset = param->getOffset();
 
-                        int hessianBlocklOffset = colOffset * nJacobianBlockRows + rowOffset;
+                            int hessianBlocklOffset = colOffset * nJacobianBlockRows + rowOffset;
 
-                        // J(i,row)' * J(i,col) will share same parameters and residuals
-                        calculateHessianBlock(getHessian() + hessianBlocklOffset,
-                                              paramT->getJacobians(), param->getJacobians(), paramT->numResiduals(),
-                                              paramT->numParameters());
+                            // Compute upper triagle J()
+                            // J(i,row)' * J(i,col) will share same number of residuals
+                            // Because the hessian matrix can be much larger and we want to insert/add the computed results
+                            // into the hessian, we send the method the total size of the hessian so proper offsets can be
+                            // computed. We will only be computing a square Hessian.
+                            calculateHessianBlock(getHessian() + hessianBlocklOffset, nEffectiveParams,
+                                                  paramT->getJacobians(), paramT->numParameters(),
+                                                  param->getJacobians(), param->numParameters(),
+                                                  paramT->numResiduals());
 
-                        // TODO: Compute lower triagle
+                            // Compute lower triagle H(row,col) += H(col,row)'
 //                        int hessianBlockTOffset = rowOffset * nJacobianBlockRows + colOffset;
+                        }
                     }
+                    jBlkRow++;
                 }
-                jBlkRow++;
             }
-
         }
 
         float setError(float error_) {
@@ -115,8 +127,8 @@ namespace telef::solver {
              * Parameters for J(0,0) are shared with J(1,0)
              *
              */
-            int nJacobianBlockRows = residualFuncs.size();
-            int nJacobianBlockCols = 0;
+            nJacobianBlockRows = residualFuncs.size();
+            nJacobianBlockCols = 0;
             jacobianBlocks.clear();
 
             for (auto resFunc : residualFuncs) {
@@ -161,9 +173,9 @@ namespace telef::solver {
             onInitialize();
         }
 
-        virtual void calculateHessianBlock(float *hessianBlock,
-                float *jacobianA, float *jacobianB,
-                int nResiduals, int nParameters);
+        virtual void
+        calculateHessianBlock(float *hessianBlock, const int nEffectiveParams, const float *jacobianA, const int nParamsA,
+                                      const float *jacobianB, const int nParamsB, const int nResiduals) = 0;
 
         virtual float* getLambda() = 0;
 

@@ -28,9 +28,6 @@ namespace telef::solver {
 
         virtual ~GPUResidualBlock(){
             utils::CUDA_FREE(residuals);
-            utils::CUDA_FREE(step);
-            utils::CUDA_FREE(lambda);
-
             utils::CUDA_FREE(workingError);
         }
 
@@ -39,49 +36,16 @@ namespace telef::solver {
             return residuals;
         };
 
-        virtual float* getStep(){
-            return step;
-        };
-
-        virtual float* getLambda(){
-            return lambda;
-        };
-
         virtual float* getWorkingError(){
             return workingError;
         }
 
-
-        virtual float* getGradient(){
-            return gradient;
-        }
-
-        virtual float* getHessien(){
-            return hessian;
-        }
-
-        void initialize() override {
-            nEffectiveParams = 0;
-            for(auto param : parameterBlocks){
-                nEffectiveParams += param->numParameters();
-            }
-        };
-
     private:
         float* residuals;
-        float* step;
-        float* lambda;
 
         float* workingError;
-
-        float* gradient;
-        float* hessian;
-
         void initialize(const int& nRes){
             utils::CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
-            utils::CUDA_ALLOC_AND_ZERO(&step, static_cast<size_t>(1));
-            utils::CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
-
             utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
         }
 
