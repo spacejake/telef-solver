@@ -13,6 +13,11 @@ void cudaMatMul(cublasHandle_t cublasHandle, float *matC,
 
 
 void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC,
-                     const float *matA, int aRows, int aCols,
-                     const float *matB, int bRows, int bCols,
-                     const float alpha=1.0f);
+        const float *matA, const int aRows, const int aCols,
+        const float *matB, const int bRows, const int bCols,
+        const float alpha = 1.0f, const float beta = 0.0f);
+
+void cudaMatMul_ATxB(cublasHandle_t cublasHandle, float *matC, const int cCols,
+        const float *matA, int aRows, int aCols,
+        const float *matB, int bRows, int bCols,
+        const float alpha = 1.0f, const float beta = 0.0f);
