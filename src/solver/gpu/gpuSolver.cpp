@@ -49,6 +49,8 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
     CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemset(problemWorkError, 0, sizeof(float)));
 
+    print_array("Init::Lambda:", lambda, 1);
+
     // Initialize Dampening Factors
     float* dampeningFactors = problem->getDampeningFactors();
     CUDA_CHECK(cudaMemset(dampeningFactors, 0, problem->numEffectiveParams()*sizeof(float)));

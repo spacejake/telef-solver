@@ -62,6 +62,7 @@ namespace telef::solver {
         virtual void onInitialize() {
             // Allocate cuda space
             utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
+            utils::CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
             utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
             utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
