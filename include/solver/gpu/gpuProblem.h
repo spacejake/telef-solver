@@ -73,10 +73,12 @@ namespace telef::solver {
         }
 
         virtual void
-        calculateHessianBlock(float *hessianBlock, const int nEffectiveParams, const float *jacobianA, const int nParamsA,
-                                      const float *jacobianB, const int nParamsB, const int nResiduals) {
-            cudaMatMul_ATxB(cublasHandle, hessianBlock,
-                    jacobianA, nResiduals, nParamsB,
+        calculateHessianBlock(float *hessianBlock, const int nEffectiveParams,
+                const float *jacobianA, const int nParamsA,
+                const float *jacobianB, const int nParamsB,
+                const int nResiduals) {
+            cudaMatMul_ATxB(cublasHandle, hessianBlock, nEffectiveParams,
+                    jacobianA, nResiduals, nParamsA,
                     jacobianB, nResiduals, nParamsB,
                     1.0f, 1.0f);
         }

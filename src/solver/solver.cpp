@@ -168,7 +168,7 @@ Status Solver::solve(Problem::Ptr problem) {
         prev_good_iteration = good_iteration;
     }
 
-    finalize_result(telef::solver::Problem::Ptr());
+    finalize_result(problem);
 
     if (options.verbose) {
         std::stringstream logmsg;

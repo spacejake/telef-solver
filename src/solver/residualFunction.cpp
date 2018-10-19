@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "solver/residualFunction.h"
+#include "solver/gpu/cuda/cu_solver.h"
 
 using namespace telef::solver;
 
@@ -17,6 +18,7 @@ void ResidualFunction::evaluate(float *gradient, bool evalJacobians_) {
                           paramBlock->getJacobians(), residualBlock->getResiduals(),
                           residualBlock->numResiduals(), paramBlock->numParameters());
 
+            print_array("evaluate::Gradient", gradient+paramBlock->getOffset(), paramBlock->numParameters());
 //
 //            calcHessians(paramBlock->getHessians(),
 //                         paramBlock->getJacobians(),

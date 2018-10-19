@@ -246,8 +246,9 @@ void GPUSolverMultiResidual::SetUp()
     auto resBlock1 = std::make_shared<GPUResidualBlock>(nRes1, nParams1);
     auto cost1 = std::make_shared<TestCostFunctionSimple2>();
     auto residualFunc1 = std::make_shared<GPUResidualFunction>(cost1, resBlock1, 1.0);
+    resBlock1->getParameterBlocks()[0]->share(resBlock2->getParameterBlocks()[0]);
     params1 = {0.5f,0.5};
-    std::vector<float*> initParams1 = {params1.data()};
+    std::vector<float*> initParams1 = {params2.data()};
     problem->addResidualFunction(residualFunc1, initParams1);
     problem->initialize();
 }

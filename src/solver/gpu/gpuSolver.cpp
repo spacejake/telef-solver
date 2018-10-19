@@ -49,7 +49,7 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
     CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemset(problemWorkError, 0, sizeof(float)));
 
-    print_array("Init::Lambda:", lambda, 1);
+//    print_array("Init::Lambda:", lambda, 1);
 
     // Initialize Dampening Factors
     float* dampeningFactors = problem->getDampeningFactors();
@@ -81,10 +81,11 @@ void GPUSolver::finalize_result(Problem::Ptr problem) {
     for(auto resFunc : residualFuncs) {
         auto resBlock = resFunc->getResidualBlock();
         for(auto paramBlock : resBlock->getParameterBlocks()){
-            if (!paramBlock->isShared()) {
+            // TODO: What if user uses same pointer to parameter or doesn't but still considered shared?? Just overwrite it?
+//            if (!paramBlock->isShared()) {
                 // Copys Results from GPU onto CPU into user maintained parameter array.
                 paramBlock->getResultParameters();
-            }
+//            }
         }
     }
 }
@@ -99,12 +100,12 @@ void GPUSolver::updateStep(float* lambda, bool goodStep) {
 
 void
 GPUSolver::updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep) {
-    print_array("updateHessians::hessians::before", hessians, nParams*nParams);
-    print_array("updateHessians::dampeningFactors::before", dampeningFactors, nParams);
-    print_array("updateHessians::lambda", lambda, 1);
+//    print_array("updateHessians::hessians::before", hessians, nParams*nParams);
+//    print_array("updateHessians::dampeningFactors::before", dampeningFactors, nParams);
+//    print_array("updateHessians::lambda", lambda, 1);
     update_hessians(hessians, dampeningFactors, lambda, nParams, goodStep);
-    print_array("updateHessians::hessians::after", hessians, nParams*nParams);
-    print_array("updateHessians::dampeningFactors::after", dampeningFactors, nParams);
+//    print_array("updateHessians::hessians::after", hessians, nParams*nParams);
+//    print_array("updateHessians::dampeningFactors::after", dampeningFactors, nParams);
 }
 
 /**
@@ -136,11 +137,11 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
 bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const float *hessians, const float *gradients, const int nParams) {
 
 
-    print_array("solveSystem::hessians", hessians, nParams*nParams);
+//    print_array("solveSystem::hessians", hessians, nParams*nParams);
     // Copy hessians(A) to hessianLowTri(will be L), since it is inplace decomposition, for A=LL*
     CUDA_CHECK(cudaMemcpy(hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 //    print_array("InitL:", hessianLowTri, nParams*nParams);
-    print_array("solveSystem::hessianLowTri", hessians, nParams*nParams);
+//    print_array("solveSystem::hessianLowTri", hessians, nParams*nParams);
 
     // Copy gradients(x) to deltaParams(will be b), since it shares the same in/out param, for Ax=b
     CUDA_CHECK(cudaMemcpy(deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));

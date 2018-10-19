@@ -40,7 +40,13 @@ namespace telef::solver {
         }
 
         virtual float* getResultParameters() {
-            cudaMemcpy(resultParameters, getParameters(), nParameters*sizeof(float), cudaMemcpyDeviceToHost);
+            // FIXME: What if user uses same pointer or doesn't but still considard shared?? Just overwrite it?
+            if (!isShared()) {
+                cudaMemcpy(resultParameters, getParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
+            } else {
+                cudaMemcpy(resultParameters, shared_parameter->getParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
+            }
+
             return resultParameters;
         }
 

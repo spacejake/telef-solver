@@ -5,6 +5,7 @@
 #include <cuda_runtime.h>
 
 #include "solver/residualFunction.h"
+#include "solver/gpu/cuda/cu_solver.h"
 
 namespace telef::solver {
     class Problem {
@@ -29,13 +30,13 @@ namespace telef::solver {
             }
 
             if (evalJacobians_) {
+                print_array("evaluate::FinalGradient", getGradient(), numEffectiveParams());
                 //TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
-                int jBlkRow = 0;
-                for (auto resFunc : residualFuncs) {
-                    for (int jBlkCol = 0; jBlkCol < nJacobianBlockCols; jBlkCol++) {
+                for (int hBlkRow = 0; hBlkRow < nJacobianBlockCols; hBlkRow++) {
+                    for (int hBlkCol = 0; hBlkCol < nJacobianBlockCols; hBlkCol++) {
                         for (int i = 0; i < nJacobianBlockRows; i++) {
-                            auto paramT = getFromJBlock(i, jBlkRow);
-                            auto param = getFromJBlock(i, jBlkCol);
+                            auto paramT = getFromJBlock(i, hBlkCol);
+                            auto param = getFromJBlock(i, hBlkRow);
                             if (paramT == nullptr || param == nullptr) {
                                 // Skip block, will result in 0s since we add the result to the Global hessian
                                 continue;
@@ -44,7 +45,7 @@ namespace telef::solver {
                             int colOffset = paramT->getOffset();
                             int rowOffset = param->getOffset();
 
-                            int hessianBlocklOffset = colOffset * nJacobianBlockRows + rowOffset;
+                            int hessianBlocklOffset = rowOffset * nEffectiveParams + colOffset;
 
                             // Compute upper triagle J()
                             // J(i,row)' * J(i,col) will share same number of residuals
@@ -57,10 +58,10 @@ namespace telef::solver {
                                                   paramT->numResiduals());
 
                             // Compute lower triagle H(row,col) += H(col,row)'
-//                        int hessianBlockTOffset = rowOffset * nJacobianBlockRows + colOffset;
+
+//                            print_array("calculateHessianBlock::Hessian::after", getHessian(), nEffectiveParams*nEffectiveParams );
                         }
                     }
-                    jBlkRow++;
                 }
             }
         }
@@ -105,7 +106,7 @@ namespace telef::solver {
         ParameterBlock::Ptr getFromJBlock(int row, int col){
             int index = row * nJacobianBlockCols + col;
             assert( index  < jacobianBlocks.size() && "Requesting invalid index from JBlock");
-            return jacobianBlocks[row * nJacobianBlockCols + col];
+            return jacobianBlocks[index];
         }
 
         void initialize() {
