@@ -45,7 +45,7 @@ namespace telef::solver {
 
         // Result can be obtained via the given ParameterBlocks.getParameters(),
         // the user gives the solver the working memory space
-        Status solve(Problem::Ptr problem);
+        Status solve(Problem::Ptr problem, bool initProblem = true);
     protected:
 
         /**

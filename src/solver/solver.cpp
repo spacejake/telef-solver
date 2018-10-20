@@ -8,7 +8,7 @@
 using namespace std;
 using namespace telef::solver;
 
-Status Solver::solve(Problem::Ptr problem) {
+Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     auto residualFuncs = problem->getResidualFunctions();
 
     if (residualFuncs.size() == 0) {
@@ -17,8 +17,10 @@ Status Solver::solve(Problem::Ptr problem) {
 
     Status status = Status::RUNNING;
 
-    // TODO: add flag?
-    problem->initialize();
+    // Initialize
+    if (initProblem) {
+        problem->initialize();
+    }
     initialize_run(problem);
 
     //loop through each cost function, initialize all memory with results from given starting params
@@ -179,7 +181,8 @@ Status Solver::solve(Problem::Ptr problem) {
         logmsg << "\tTotal Iterations: " << iter << std::endl;
 
         logmsg << std::scientific;
-        logmsg << "\tError: " << error << std::endl;
+        logmsg << "\tError:\t"  << error << std::endl;
+        logmsg << "\tChange:\t" << init_error-error << std::endl;
 
         std::cout << std::endl << logmsg.str() << std::endl;
     }
