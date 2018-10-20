@@ -7,7 +7,7 @@ using namespace telef::solver::utils;
 using namespace telef::solver;
 
 //TestCostFunctionSimple START
-TestCostFunctionSimple::TestCostFunctionSimple(){
+TestCostFunctionSimple::TestCostFunctionSimple(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10};
     CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
@@ -29,7 +29,7 @@ void TestCostFunctionSimple::evaluate(ResidualBlock::Ptr residualBlock, const bo
 //TestCostFunctionSimple END
 
 //TestCostFunctionSimple START
-TestCostFunctionSimple2::TestCostFunctionSimple2(){
+TestCostFunctionSimple2::TestCostFunctionSimple2(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10};
     CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
@@ -51,7 +51,7 @@ void TestCostFunctionSimple2::evaluate(ResidualBlock::Ptr residualBlock, const b
 //TestCostFunctionSimple END
 
 //TestCostFunction START
-TestCostFunction::TestCostFunction(){
+TestCostFunction::TestCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10,3,4,1};
     CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
@@ -73,7 +73,7 @@ void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool com
 //TestCostFunction END
 
 //TestMultiParamCostFunction START
-TestMultiParamCostFunction::TestMultiParamCostFunction(){
+TestMultiParamCostFunction::TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10,3,4,1};
     CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
@@ -112,7 +112,7 @@ void GPUResidualFunctionTest::SetUp()
     paramBlock->setInitialParams(params.data());
     paramBlock->initializeParameters();
 
-    CostFunction::Ptr cost = std::make_shared<TestCostFunction>();
+    CostFunction::Ptr cost = std::make_shared<TestCostFunction>(nRes, nParams);
 
     residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
     residualFunc->setCublasHandle(cublasHandle);
@@ -152,19 +152,17 @@ void GPUResidualFunctionTest::initJacobians(){
 //GPUSolverTestSimple START
 void GPUSolverTestSimple::SetUp()
 {
+    solver = std::make_shared<GPUSolver>();
+    problem = std::make_shared<GPUProblem>();
 
     std::vector<int> nParams = {1};
     int nRes = 1;
-    auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);
-    auto cost = std::make_shared<TestCostFunctionSimple>();
-    auto residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
+    auto cost = std::make_shared<TestCostFunctionSimple>(nRes, nParams);
 
-    solver = std::make_shared<GPUSolver>();
     params = {0.5f};
     std::vector<float*> initParams = {params.data()};
 
-    problem = std::make_shared<GPUProblem>();
-    problem->addResidualFunction(residualFunc, initParams);
+    auto resFunc = problem->addResidualFunction(cost, initParams);
     //problem->initialize();
 }
 
@@ -177,20 +175,19 @@ void GPUSolverTestSimple::TearDown() {
 //GPUSolverTest START
 void GPUSolverTest::SetUp()
 {
+    solver = std::make_shared<GPUSolver>();
+    problem = std::make_shared<GPUProblem>();
+
     std::vector<int> nParams = {2};
     int nRes = 4;
-    auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);
-    auto cost = std::make_shared<TestCostFunction>();
-    auto residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
+    auto cost = std::make_shared<TestCostFunction>(nRes, nParams);
 
-    solver = std::make_shared<GPUSolver>();
     params = {0.5,0.5};
 //    params = {-2.60216,0.0318891};
     std::vector<float*> initParams = {params.data()};
 
-    problem = std::make_shared<GPUProblem>();
-    problem->addResidualFunction(residualFunc, initParams);
-    problem->initialize();
+    auto resFunc = problem->addResidualFunction(cost, initParams);
+//    problem->initialize();
 }
 
 void GPUSolverTest::TearDown() {
@@ -202,21 +199,19 @@ void GPUSolverTest::TearDown() {
 //GPUSolverMultiParam START
 void GPUSolverMultiParam::SetUp()
 {
+    solver = std::make_shared<GPUSolver>();
+    problem = std::make_shared<GPUProblem>();
+
     std::vector<int> nParams = {2,1};
     int nRes = 4;
-    auto resBlock = std::make_shared<GPUResidualBlock>(nRes, nParams);
-    auto cost = std::make_shared<TestMultiParamCostFunction>();
-    auto residualFunc = std::make_shared<GPUResidualFunction>(cost, resBlock, 1.0);
+    auto cost = std::make_shared<TestMultiParamCostFunction>(nRes, nParams);
 
-    solver = std::make_shared<GPUSolver>();
     params1 = {0.5,0.5};
     params2 = {0.5};
 
     std::vector<float*> initParams = {params1.data(), params2.data()};
-
-    problem = std::make_shared<GPUProblem>();
-    problem->addResidualFunction(residualFunc, initParams);
-    problem->initialize();
+    auto resFunc = problem->addResidualFunction(cost, initParams);
+//    problem->initialize();
 }
 
 void GPUSolverMultiParam::TearDown() {
@@ -229,28 +224,27 @@ void GPUSolverMultiParam::TearDown() {
 void GPUSolverMultiResidual::SetUp()
 {
     solver = std::make_shared<GPUSolver>();
-
-    std::vector<int> nParams2 = {2};
-    int nRes2 = 4;
-    auto resBlock2 = std::make_shared<GPUResidualBlock>(nRes2, nParams2);
-    auto cost2 = std::make_shared<TestCostFunction>();
-    auto residualFunc2 = std::make_shared<GPUResidualFunction>(cost2, resBlock2, 1.0);
-    params2 = {0.5,0.5};
-    std::vector<float*> initParams2 = {params2.data()};
-
     problem = std::make_shared<GPUProblem>();
-    problem->addResidualFunction(residualFunc2, initParams2);
 
     std::vector<int> nParams1 = {2};
     int nRes1 = 1;
-    auto resBlock1 = std::make_shared<GPUResidualBlock>(nRes1, nParams1);
-    auto cost1 = std::make_shared<TestCostFunctionSimple2>();
-    auto residualFunc1 = std::make_shared<GPUResidualFunction>(cost1, resBlock1, 1.0);
-    resBlock1->getParameterBlocks()[0]->share(resBlock2->getParameterBlocks()[0]);
+    auto cost1 = std::make_shared<TestCostFunctionSimple2>(nRes1, nParams1);
     params1 = {0.5f,0.5};
-    std::vector<float*> initParams1 = {params2.data()};
-    problem->addResidualFunction(residualFunc1, initParams1);
-    problem->initialize();
+    std::vector<float*> initParams1 = {params1.data()};
+
+    std::vector<int> nParams2 = {2};
+    int nRes2 = 4;
+    auto cost2 = std::make_shared<TestCostFunction>(nRes2, nParams2);
+    params2 = {0.5,0.5};
+    std::vector<float*> initParams2 = {params2.data()};
+
+    ResidualFunction::Ptr resFunc1 = problem->addResidualFunction(cost1, initParams1);
+    ResidualFunction::Ptr resFunc2 = problem->addResidualFunction(cost2, initParams2);
+
+    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
+            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
+
+//    problem->initialize();
 }
 
 void GPUSolverMultiResidual::TearDown() {

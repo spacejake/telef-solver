@@ -121,14 +121,16 @@ Status Solver::solve(Problem::Ptr problem) {
                 auto resBlock = resFunc->getResidualBlock();
                 auto paramBlocks = resBlock->getParameterBlocks();
                 for (ParameterBlock::Ptr paramBlock : paramBlocks) {
-                    copyParams(paramBlock->getParameters(),
-                               paramBlock->getWorkingParameters(), paramBlock->numParameters());
+                    if (!paramBlock->isShared()) {
+                        copyParams(paramBlock->getParameters(),
+                                   paramBlock->getWorkingParameters(), paramBlock->numParameters());
+                    }
                 }
             }
 
             //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
             // Convergence achieved
-            if (-iterDerr < options.target_error_change) {
+            if (-iterDerr < options.target_error_change && prev_good_iteration) {
                 status = Status::CONVERGENCE;
             }
         }

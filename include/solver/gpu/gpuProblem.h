@@ -6,6 +6,7 @@
 #include "util/cudautil.h"
 
 #include "solver/problem.h"
+#include "solver/gpu/gpuResidualFunction.h"
 #include "solver/gpu/cuda/cu_resudual.h"
 #include "solver/gpu/cuda/cu_solver.h"
 
@@ -24,6 +25,10 @@ namespace telef::solver {
             cudaFree(gradients);
             cudaFree(hessian);
             cudaFree(hessianLowTri);
+        }
+
+        void setCublasHandle(cublasHandle_t cublasHandle_){
+            cublasHandle = cublasHandle_;
         }
 
         virtual float* getWorkingError() {
@@ -83,8 +88,9 @@ namespace telef::solver {
                     1.0f, 1.0f);
         }
 
-        void setCublasHandle(cublasHandle_t cublasHandle_){
-            cublasHandle = cublasHandle_;
+        virtual ResidualFunction::Ptr createResidualFunction(CostFunction::Ptr costFunc_) {
+            auto resBlock = std::make_shared<GPUResidualBlock>(costFunc_->numResiduals(), costFunc_->getParameterSizes());
+            return std::make_shared<GPUResidualFunction>(costFunc_, resBlock);
         }
 
     protected:

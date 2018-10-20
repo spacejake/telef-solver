@@ -80,6 +80,19 @@ namespace telef::solver {
             residualFuncs.push_back(resFunc_);
         }
 
+        ResidualFunction::Ptr addResidualFunction(CostFunction::Ptr costFunc_,
+                                                  const std::vector<float*> &params_){
+            // TODO: Change if we decide to interface with problem with Pure GPU Params in -> GPU Params out
+            // Currently interface is CPU inital params in -> CPU result params out
+
+            auto resFunc = createResidualFunction(costFunc_);
+
+            resFunc->setInitialParams(params_);
+            residualFuncs.push_back(resFunc);
+
+            return resFunc;
+        }
+
 
         const std::vector<ResidualFunction::Ptr>& getResidualFunctions() {
             return residualFuncs;
@@ -177,6 +190,8 @@ namespace telef::solver {
         virtual void
         calculateHessianBlock(float *hessianBlock, const int nEffectiveParams, const float *jacobianA, const int nParamsA,
                                       const float *jacobianB, const int nParamsB, const int nResiduals) = 0;
+
+        virtual ResidualFunction::Ptr createResidualFunction(CostFunction::Ptr costFunc_) = 0;
 
         virtual float* getLambda() = 0;
 

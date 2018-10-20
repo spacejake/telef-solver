@@ -10,7 +10,7 @@
 
 class TestCostFunctionSimple : public telef::solver::CostFunction {
 public:
-    TestCostFunctionSimple();
+    TestCostFunctionSimple(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestCostFunctionSimple();
     virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
 private:
@@ -20,7 +20,7 @@ private:
 
 class TestCostFunctionSimple2 : public telef::solver::CostFunction {
 public:
-    TestCostFunctionSimple2();
+    TestCostFunctionSimple2(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestCostFunctionSimple2();
     virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
 private:
@@ -30,7 +30,7 @@ private:
 
 class TestCostFunction : public telef::solver::CostFunction {
 public:
-    TestCostFunction();
+    TestCostFunction(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestCostFunction();
     virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
 private:
@@ -39,7 +39,7 @@ private:
 
 class TestMultiParamCostFunction : public telef::solver::CostFunction {
 public:
-    TestMultiParamCostFunction();
+    TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestMultiParamCostFunction();
     virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock, const bool computeJacobians) const;
 private:

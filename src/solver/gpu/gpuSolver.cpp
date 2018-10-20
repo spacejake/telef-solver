@@ -1,14 +1,12 @@
 
 #include <cublas_v2.h>
 #include <cusolverDn.h>
-#include <solver/gpu/gpuResidualFunction.h>
 
 #include "solver/gpu/cuda/cu_solver.h"
 
 #include "util/cudautil.h"
 #include "solver/gpu/gpuSolver.h"
 #include "solver/gpu/gpuProblem.h"
-#include "solver/gpu/gpuResidualFunction.h"
 
 using namespace telef::solver;
 

@@ -68,6 +68,7 @@ namespace telef::solver {
 
         void share(ParameterBlock::Ptr original_parameter) {
             assert(!original_parameter->isShared() && "original parameter must not be shared");
+            assert(original_parameter.get() != this && "Parameter Block Can't be shared with itself");
 
             shared_parameter = std::move(original_parameter);
             onShare();

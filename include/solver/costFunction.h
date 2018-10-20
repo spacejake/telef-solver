@@ -19,14 +19,18 @@ namespace telef::solver {
         //TODO: Should we give number of residuals/params for validation(assert) ResidualBlock and cost match up???
         //      I see this as benificial incase there is a mistake since both are independant of one another.
         //      Alothough it could be done in the evaluate function too?
-        CostFunction(){}
+        CostFunction(int nRes, const std::vector<int>& paramSizes_) : nResiduals(nRes), parameterSizes(paramSizes_){}
 
         virtual ~CostFunction() {}
 
 
-//        int getNumResiduals() const {
-//            return numResiduals;
-//        }
+        const int numResiduals() const {
+            return nResiduals;
+        }
+
+        const std::vector<int>& getParameterSizes() const {
+            return parameterSizes;
+        }
 
         /**
          * Evaluate residuals (y - f(x)) and the jacobians of f(x) given the parameters x.
@@ -41,7 +45,8 @@ namespace telef::solver {
         virtual void evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const = 0;
 
 
-//    private:
-//        int numResiduals;
+    private:
+        int nResiduals;
+        std::vector<int> parameterSizes;
     };
 }

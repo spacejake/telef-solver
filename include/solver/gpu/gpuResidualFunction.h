@@ -14,7 +14,7 @@ namespace telef::solver {
 
         GPUResidualFunction(CostFunction::Ptr costFunc_,
                             GPUResidualBlock::Ptr resBlock_,
-                            const float weight_=1.0)
+                            const float weight_= 1.0)
                 : ResidualFunction(costFunc_, resBlock_, weight_) {}
 
         virtual ~GPUResidualFunction(){
