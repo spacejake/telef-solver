@@ -181,8 +181,9 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         logmsg << "\tTotal Iterations: " << iter << std::endl;
 
         logmsg << std::scientific;
-        logmsg << "\tError:\t"  << error << std::endl;
-        logmsg << "\tChange:\t" << init_error-error << std::endl;
+        logmsg << "\tInitial Error:\t"  << init_error << std::endl;
+        logmsg << "\tFinal Error:\t"  << error << std::endl;
+        logmsg << "\tTotal Change:\t" << error-init_error << std::endl;
 
         std::cout << std::endl << logmsg.str() << std::endl;
     }

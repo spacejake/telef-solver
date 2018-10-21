@@ -30,8 +30,12 @@ namespace telef::solver {
             }
 
             if (evalJacobians_) {
-                print_array("evaluate::FinalGradient", getGradient(), numEffectiveParams());
-                //TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
+                // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
+                //print_array("Gradient", getGradient(), numEffectiveParams());
+
+                // Compute Globa Hessian
+                // TODO: write unit tests for global hessian computation
+                // TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
                 for (int hBlkRow = 0; hBlkRow < nJacobianBlockCols; hBlkRow++) {
                     for (int hBlkCol = 0; hBlkCol < nJacobianBlockCols; hBlkCol++) {
                         for (int i = 0; i < nJacobianBlockRows; i++) {
@@ -48,7 +52,7 @@ namespace telef::solver {
                             int hessianBlocklOffset = rowOffset * nEffectiveParams + colOffset;
 
                             // Compute upper triagle J()
-                            // J(i,row)' * J(i,col) will share same number of residuals
+                            // J(i,col)' * J(i,row) will share same number of residuals
                             // Because the hessian matrix can be much larger and we want to insert/add the computed results
                             // into the hessian, we send the method the total size of the hessian so proper offsets can be
                             // computed. We will only be computing a square Hessian.
@@ -193,6 +197,7 @@ namespace telef::solver {
 
         virtual ResidualFunction::Ptr createResidualFunction(CostFunction::Ptr costFunc_) = 0;
 
+        // TODO: Move to a different Block class?
         virtual float* getLambda() = 0;
 
         virtual float* getWorkingError() = 0;
