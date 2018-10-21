@@ -132,7 +132,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
             // Convergence achieved
-            if (-iterDerr < options.target_error_change && prev_good_iteration) {
+            if (-iterDerr < options.target_error_change /*&& prev_good_iteration*/) {
                 status = Status::CONVERGENCE;
             }
         }
