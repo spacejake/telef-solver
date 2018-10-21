@@ -127,14 +127,18 @@ target_link_libraries(${PROJECT_NAME}
         )
 
 ###### INSTALL ######
-#configure_file(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
+configure_file(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
 
-#install(TARGETS ${PROJECT_NAME}
-#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-#install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc
-#        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
 
 ###### EXAMPLES ######
 add_executable(TestApp examples/test_app.cpp)
@@ -143,6 +147,8 @@ target_link_libraries(TestApp ${PROJECT_NAME}
 
 ###### Tests ######
 if (BUILD_TESTS)
+    set(INSTALL_GTEST 0)
+    set(INSTALL_GMOCK 0)
     function(myaddtest testname testpath)
         add_executable(${testname} ${testpath})
         target_link_libraries(${testname} gtest gtest_main gmock ${CBLAS_LIBRARIES})
