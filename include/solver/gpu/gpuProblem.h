@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 
 #include "solver/problem.h"
 #include "solver/gpu/gpuResidualFunction.h"
@@ -66,15 +66,15 @@ namespace telef::solver {
          */
         virtual void onInitialize() {
             // Allocate cuda space
-            utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
-            utils::CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
-            utils::CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
-            utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
-            utils::CUDA_ALLOC_AND_ZERO(&dampeningFactors, static_cast<size_t>(nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&dampeningFactors, static_cast<size_t>(nEffectiveParams));
 
-            utils::CUDA_ALLOC_AND_ZERO(&hessian, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
-            utils::CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&hessian, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
         }
 
         virtual void

@@ -4,7 +4,7 @@
 
 #include "solver/gpu/cuda/cu_solver.h"
 
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 #include "solver/gpu/gpuSolver.h"
 #include "solver/gpu/gpuProblem.h"
 
@@ -44,14 +44,14 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
     //Initialize Total Error
     float* problemWorkError = problem->getWorkingError();
 
-    CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemset(problemWorkError, 0, sizeof(float)));
+    SOLVER_CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
+    SOLVER_CUDA_CHECK(cudaMemset(problemWorkError, 0, sizeof(float)));
 
 //    print_array("Init::Lambda:", lambda, 1);
 
     // Initialize Dampening Factors
     float* dampeningFactors = problem->getDampeningFactors();
-    CUDA_CHECK(cudaMemset(dampeningFactors, 0, problem->numEffectiveParams()*sizeof(float)));
+    SOLVER_CUDA_CHECK(cudaMemset(dampeningFactors, 0, problem->numEffectiveParams()*sizeof(float)));
 
     for(ResidualFunction::Ptr resFunc : residualFuncs) {
         std::shared_ptr<GPUResidualFunction> gpuResFunc = std::dynamic_pointer_cast<GPUResidualFunction>(resFunc);
@@ -63,7 +63,7 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
         auto resBlock = resFunc->getResidualBlock();
         float* workError = resBlock->getWorkingError();
 
-        CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
+        SOLVER_CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
 
         //TODO: Initialize Parameters in init step, currently in setInitialParams
         //      This is so CPU? and GPU implementations can copy parameters to working params or on to GPU
@@ -129,7 +129,7 @@ void GPUSolver::copyParams(float *destParams, const float *srcParams, const int 
      * 100000      0.019                              0.068
      * 1000000     0.20                               0.22
      */
-    CUDA_CHECK(cudaMemcpy(destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+    SOLVER_CUDA_CHECK(cudaMemcpy(destParams, srcParams, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 }
 
 bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const float *hessians, const float *gradients, const int nParams) {
@@ -137,12 +137,12 @@ bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const floa
 
 //    print_array("solveSystem::hessians", hessians, nParams*nParams);
     // Copy hessians(A) to hessianLowTri(will be L), since it is inplace decomposition, for A=LL*
-    CUDA_CHECK(cudaMemcpy(hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+    SOLVER_CUDA_CHECK(cudaMemcpy(hessianLowTri, hessians, nParams*nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 //    print_array("InitL:", hessianLowTri, nParams*nParams);
 //    print_array("solveSystem::hessianLowTri", hessians, nParams*nParams);
 
     // Copy gradients(x) to deltaParams(will be b), since it shares the same in/out param, for Ax=b
-    CUDA_CHECK(cudaMemcpy(deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
+    SOLVER_CUDA_CHECK(cudaMemcpy(deltaParams, gradients, nParams*sizeof(float), cudaMemcpyDeviceToDevice));
 
 
     bool isPosDefMat = decompose_cholesky(solver_handle, hessianLowTri, nParams);

@@ -3,7 +3,7 @@
 #include <cublas_v2.h>
 #include <cusolver_common.h>
 #include <cusolverDn.h>
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 
 #include "solver/solver.h"
 
@@ -66,8 +66,8 @@ namespace telef::solver {
         }
 
         void initDeviceMemory(){
-            utils::CUDA_ALLOC_AND_ZERO(&down_factor_d, static_cast<size_t>(1));
-            utils::CUDA_ALLOC_AND_ZERO(&up_factor_d, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&down_factor_d, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&up_factor_d, static_cast<size_t>(1));
         }
     };
 }

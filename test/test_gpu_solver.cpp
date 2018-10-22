@@ -13,7 +13,7 @@
 
 #include "solver/gpu/gpuResidualFunction.h"
 
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 #include "cuda/cuda_kernel.h"
 #include "solver/gpu/cuda/cu_solver.h"
 #include "mock_gpu.h"

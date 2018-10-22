@@ -47,9 +47,9 @@ TEST(Matrix, gpu_multiply) {
     //Cols C=1
     float C[6];
     float *C_d;
-    utils::CUDA_MALLOC(&A_d, static_cast<size_t>(rowA*colA));
-    utils::CUDA_MALLOC(&B_d, static_cast<size_t>(rowB*colB));
-    utils::CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(2*3));
+    SOLVER_CUDA_MALLOC(&A_d, static_cast<size_t>(rowA * colA));
+    SOLVER_CUDA_MALLOC(&B_d, static_cast<size_t>(rowB * colB));
+    SOLVER_CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(2 * 3));
 
     cudaMemcpy(A_d, A, rowA*colA*sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(B_d, B, rowB*colB*sizeof(float), cudaMemcpyHostToDevice);
@@ -115,9 +115,9 @@ TEST(Matrix, gpu_multiply_ATxB) {
     //Cols C=1
     float C[6];
     float *C_d;
-    utils::CUDA_MALLOC(&A_d, static_cast<size_t>(rowA*colA));
-    utils::CUDA_MALLOC(&B_d, static_cast<size_t>(rowB*colB));
-    utils::CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(2*3));
+    SOLVER_CUDA_MALLOC(&A_d, static_cast<size_t>(rowA * colA));
+    SOLVER_CUDA_MALLOC(&B_d, static_cast<size_t>(rowB * colB));
+    SOLVER_CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(2 * 3));
 
     cudaMemcpy(A_d, A, rowA*colA*sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(B_d, B, rowB*colB*sizeof(float), cudaMemcpyHostToDevice);
@@ -176,9 +176,9 @@ TEST(Matrix, gpu_multiply_ATxB_BlockAddC) {
     float *C_d;
     int rowC=6;
     int colC=6;
-    utils::CUDA_MALLOC(&A_d, static_cast<size_t>(rowA*colA));
-    utils::CUDA_MALLOC(&B_d, static_cast<size_t>(rowB*colB));
-    utils::CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(rowC*colC));
+    SOLVER_CUDA_MALLOC(&A_d, static_cast<size_t>(rowA * colA));
+    SOLVER_CUDA_MALLOC(&B_d, static_cast<size_t>(rowB * colB));
+    SOLVER_CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(rowC * colC));
 
     cudaMemcpy(A_d, A, rowA*colA*sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(B_d, B, rowB*colB*sizeof(float), cudaMemcpyHostToDevice);
@@ -253,9 +253,9 @@ TEST(Matrix, gpu_multiply_ATxB_BlockAddC2) {
     float *C_d;
     int rowC=3;
     int colC=3;
-    utils::CUDA_MALLOC(&A_d, static_cast<size_t>(rowA*colA));
-    utils::CUDA_MALLOC(&B_d, static_cast<size_t>(rowB*colB));
-    utils::CUDA_ALLOC_AND_COPY(&C_d, C, static_cast<size_t>(rowC*colC));
+    SOLVER_CUDA_MALLOC(&A_d, static_cast<size_t>(rowA * colA));
+    SOLVER_CUDA_MALLOC(&B_d, static_cast<size_t>(rowB * colB));
+    SOLVER_CUDA_ALLOC_AND_COPY(&C_d, C, static_cast<size_t>(rowC * colC));
 //    utils::CUDA_ALLOC_AND_ZERO(&C_d, static_cast<size_t>(rowC*colC));
 
     cudaMemcpy(A_d, A, rowA*colA*sizeof(float), cudaMemcpyHostToDevice);

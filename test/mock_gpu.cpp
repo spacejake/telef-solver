@@ -1,19 +1,18 @@
 #include "mock_gpu.h"
 
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 #include "cuda/cuda_kernel.h"
 
-using namespace telef::solver::utils;
 using namespace telef::solver;
 
 //TestCostFunctionSimple START
 TestCostFunctionSimple::TestCostFunctionSimple(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10};
-    CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+    SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
 
 TestCostFunctionSimple::~TestCostFunctionSimple(){
-    CUDA_FREE(measurements_d);
+    SOLVER_CUDA_FREE(measurements_d);
 }
 
 void TestCostFunctionSimple::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
@@ -31,11 +30,11 @@ void TestCostFunctionSimple::evaluate(ResidualBlock::Ptr residualBlock, const bo
 //TestCostFunctionSimple START
 TestCostFunctionSimple2::TestCostFunctionSimple2(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10};
-    CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+    SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
 
 TestCostFunctionSimple2::~TestCostFunctionSimple2(){
-    CUDA_FREE(measurements_d);
+    SOLVER_CUDA_FREE(measurements_d);
 }
 
 void TestCostFunctionSimple2::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
@@ -53,11 +52,11 @@ void TestCostFunctionSimple2::evaluate(ResidualBlock::Ptr residualBlock, const b
 //TestCostFunction START
 TestCostFunction::TestCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10,3,4,1};
-    CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+    SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
 
 TestCostFunction::~TestCostFunction(){
-    CUDA_FREE(measurements_d);
+    SOLVER_CUDA_FREE(measurements_d);
 }
 
 void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
@@ -75,11 +74,11 @@ void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool com
 //TestMultiParamCostFunction START
 TestMultiParamCostFunction::TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10,3,4,1};
-    CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+    SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
 }
 
 TestMultiParamCostFunction::~TestMultiParamCostFunction(){
-    CUDA_FREE(measurements_d);
+    SOLVER_CUDA_FREE(measurements_d);
 }
 
 void TestMultiParamCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {

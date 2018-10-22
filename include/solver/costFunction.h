@@ -44,9 +44,11 @@ namespace telef::solver {
          */
         virtual void evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const = 0;
 
+    protected:
+        // TODO: Changing after adding to a "Problem" will likely cause CUDA allocated space to become invalid, fix
+        std::vector<int> parameterSizes;
 
     private:
         int nResiduals;
-        std::vector<int> parameterSizes;
     };
 }

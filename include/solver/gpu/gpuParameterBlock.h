@@ -2,7 +2,7 @@
 
 #include "solver/parameterBlock.h"
 
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 
 namespace telef::solver {
     class GPUParameterBlock : public ParameterBlock {
@@ -16,12 +16,12 @@ namespace telef::solver {
         }
 
         virtual ~GPUParameterBlock(){
-            if (workingParameters) utils::CUDA_FREE(workingParameters);
-            if (parameters) utils::CUDA_FREE(parameters);
+            if (workingParameters) SOLVER_CUDA_FREE(workingParameters);
+            if (parameters) SOLVER_CUDA_FREE(parameters);
 
 
-            utils::CUDA_FREE(jacobians);
-            utils::CUDA_FREE(gradients);
+            SOLVER_CUDA_FREE(jacobians);
+            SOLVER_CUDA_FREE(gradients);
         }
 
 
@@ -76,8 +76,8 @@ namespace telef::solver {
 
         virtual void onShare(){
             // We will be using the shared parameters now
-            utils::CUDA_FREE(workingParameters);
-            utils::CUDA_FREE(parameters);
+            SOLVER_CUDA_FREE(workingParameters);
+            SOLVER_CUDA_FREE(parameters);
         }
 
     private:
@@ -90,11 +90,11 @@ namespace telef::solver {
     private:
         void initDeviceMemory() {
 //            printf("ParamBlock with Res:%d and Params:%d\n", nRes, nParams);
-            utils::CUDA_ALLOC_AND_ZERO(&workingParameters, static_cast<size_t>(numParameters()));
-            utils::CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(numParameters()));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&workingParameters, static_cast<size_t>(numParameters()));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(numParameters()));
 
-            utils::CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(numParameters() * numResiduals()));
-            utils::CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(numParameters()));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(numParameters() * numResiduals()));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(numParameters()));
         }
     };
 }

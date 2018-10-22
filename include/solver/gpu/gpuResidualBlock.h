@@ -2,7 +2,7 @@
 
 #include "solver/residualBlock.h"
 #include "solver/gpu/gpuParameterBlock.h"
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 
 namespace telef::solver {
 
@@ -27,8 +27,8 @@ namespace telef::solver {
         }
 
         virtual ~GPUResidualBlock(){
-            utils::CUDA_FREE(residuals);
-            utils::CUDA_FREE(workingError);
+            SOLVER_CUDA_FREE(residuals);
+            SOLVER_CUDA_FREE(workingError);
         }
 
         // TODO: Change to use override keyword instead of virtual
@@ -45,8 +45,8 @@ namespace telef::solver {
 
         float* workingError;
         void initialize(const int& nRes){
-            utils::CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
-            utils::CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&residuals, static_cast<size_t>(nRes));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
         }
 
         void initializeParams(const int& nRes, const std::vector<int>& nParamsList){
