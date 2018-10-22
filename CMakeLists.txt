@@ -36,6 +36,7 @@ set(CMAKE_CUDA_FLAGS_DEBUG "-g -G -DDEBUG")
 set(CMAKE_CUDA_FLAGS_RELEASE "-O3")
 set(CMAKE_CUDA_HOST_COMPILER gcc-7)
 
+SET(CUDA_SEPARABLE_COMPILATION ON)
 find_package(CUDA REQUIRED)
 find_package(CBLAS REQUIRED)
 
@@ -69,7 +70,7 @@ set( gpuSrc
 )
 
 set( cudaHdr
-        include/util/cudautil.h
+        include/solver/util/cudautil.h
         include/solver/gpu/cuda/cu_resudual.h
         include/solver/gpu/cuda/cu_solver.h
 )
@@ -89,7 +90,7 @@ add_library(${PROJECT_NAME}
         ##### HDR #####
         ${interfaceHdr}
 
-        ${cudaHdr}
+        #$#{cudaHdr}
 
         # GPU Solver
         ${gpuHdr}
@@ -100,7 +101,7 @@ add_library(${PROJECT_NAME}
         # GPU Solver
         ${gpuSrc}
 
-        ${cudaSrc}
+        #$#{cudaSrc}
         )
 
 set_target_properties(${PROJECT_NAME}
@@ -122,9 +123,33 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
             ${CUDA_LIBRARIES}
+            -lcudart
+            -lcublas
+            -lcusolver
+            cutelef-solver
+        )
+
+add_library(cutelef-solver STATIC
+            ${cudaHdr}
+            ${cudaSrc}
+        )
+
+target_include_directories(cutelef-solver
+            PUBLIC ${CUDA_INCLUDE_DIRS}
+            PUBLIC ${CMAKE_SOURCE_DIR}/include/
+        )
+
+target_link_libraries(cutelef-solver
+            -lcudart
             -lcublas
             -lcusolver
         )
+
+set_target_properties(cutelef-solver PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+
 
 ###### INSTALL ######
 configure_file(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
@@ -132,7 +157,7 @@ configure_file(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} cutelef-solver
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
