@@ -17,11 +17,11 @@ TestCostFunctionSimple::~TestCostFunctionSimple(){
 
 void TestCostFunctionSimple::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
     ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
-    calc_resSimple(residualBlock->getResiduals(), params->getWorkingParameters(), measurements_d,
+    calc_resSimple(residualBlock->getResiduals(), params->getParameters(), measurements_d,
             residualBlock->numResiduals(), params->numParameters());
 
     if (computeJacobians) {
-        calc_jacobiSimple(params->getJacobians(), params->getWorkingParameters(),
+        calc_jacobiSimple(params->getJacobians(), params->getParameters(),
                      residualBlock->numResiduals(), params->numParameters());
     }
 }
@@ -39,11 +39,11 @@ TestCostFunctionSimple2::~TestCostFunctionSimple2(){
 
 void TestCostFunctionSimple2::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
     ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
-    calc_resSimple2(residualBlock->getResiduals(), params->getWorkingParameters(), measurements_d,
+    calc_resSimple2(residualBlock->getResiduals(), params->getParameters(), measurements_d,
                    residualBlock->numResiduals(), params->numParameters());
 
     if (computeJacobians) {
-        calc_jacobiSimple2(params->getJacobians(), params->getWorkingParameters(),
+        calc_jacobiSimple2(params->getJacobians(), params->getParameters(),
                           residualBlock->numResiduals(), params->numParameters());
     }
 }
@@ -61,11 +61,11 @@ TestCostFunction::~TestCostFunction(){
 
 void TestCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
     ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
-    calc_res0(residualBlock->getResiduals(), params->getWorkingParameters(), measurements_d,
+    calc_res0(residualBlock->getResiduals(), params->getParameters(), measurements_d,
               residualBlock->numResiduals(), params->numParameters());
 
     if (computeJacobians) {
-        calc_jacobi0(params->getJacobians(), params->getWorkingParameters(),
+        calc_jacobi0(params->getJacobians(), params->getParameters(),
                      residualBlock->numResiduals(), params->numParameters());
     }
 }
@@ -85,16 +85,48 @@ void TestMultiParamCostFunction::evaluate(ResidualBlock::Ptr residualBlock, cons
     ParameterBlock::Ptr params1 = residualBlock->getParameterBlocks()[0];
     ParameterBlock::Ptr params2 = residualBlock->getParameterBlocks()[1];
 
-    calc_res2Params(residualBlock->getResiduals(), params1->getWorkingParameters(), params2->getWorkingParameters(),
+    calc_res2Params(residualBlock->getResiduals(), params1->getParameters(), params2->getParameters(),
             measurements_d, residualBlock->numResiduals(), params1->numParameters(), params2->numParameters());
 
     if (computeJacobians) {
         calc_jacobi2Params(params1->getJacobians(), params2->getJacobians(),
-                params1->getWorkingParameters(), params2->getWorkingParameters(),
+                           params1->getParameters(), params2->getParameters(),
                 residualBlock->numResiduals(), params1->numParameters(), params2->numParameters());
     }
 }
 //TestMultiParamCostFunction END
+
+//Test4ParamCostFunction START
+Test4ParamCostFunction::Test4ParamCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
+    float measurements[] = {10,3,4,1,76,43,23,89,23,44};
+    SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(10));
+}
+
+Test4ParamCostFunction::~Test4ParamCostFunction(){
+    SOLVER_CUDA_FREE(measurements_d);
+}
+
+void Test4ParamCostFunction::evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const {
+    ParameterBlock::Ptr params1 = residualBlock->getParameterBlocks()[0];
+    ParameterBlock::Ptr params2 = residualBlock->getParameterBlocks()[1];
+    ParameterBlock::Ptr params3 = residualBlock->getParameterBlocks()[2];
+    ParameterBlock::Ptr params4 = residualBlock->getParameterBlocks()[3];
+
+    calc_res4Params(residualBlock->getResiduals(),
+                    params1->getParameters(), params2->getParameters(), params3->getParameters(),
+                    params4->getParameters(),
+                    measurements_d, residualBlock->numResiduals(),
+                    params1->numParameters(), params2->numParameters(), params3->numParameters(), params4->numParameters());
+
+    if (computeJacobians) {
+        calc_jacobi4Params(params1->getJacobians(), params2->getJacobians(), params3->getJacobians(), params4->getJacobians(),
+                           params1->getParameters(), params2->getParameters(), params3->getParameters(),
+                           params4->getParameters(),
+                           residualBlock->numResiduals(),
+                           params1->numParameters(), params2->numParameters(), params3->numParameters(), params4->numParameters());
+    }
+}
+//Test4ParamCostFunction END
 
 //GPUResidualFunctionTest START
 void GPUResidualFunctionTest::SetUp()
@@ -214,6 +246,32 @@ void GPUSolverMultiParam::SetUp()
 }
 
 void GPUSolverMultiParam::TearDown() {
+//    cudaDeviceReset();
+}
+
+//GPUSolverMultiParam END
+
+//GPUSolverMultiParam START
+void GPUSolver4Param::SetUp()
+{
+    solver = std::make_shared<GPUSolver>();
+    problem = std::make_shared<GPUProblem>();
+
+    std::vector<int> nParams = {2,1,2,2};
+    int nRes = 10;
+    auto cost = std::make_shared<Test4ParamCostFunction>(nRes, nParams);
+
+    params1 = {0.5,0.5};
+    params2 = {0.5};
+    params3 = {0.5,0.5};
+    params4 = {0.5,0.5};
+
+    std::vector<float*> initParams = {params1.data(), params2.data(), params3.data(), params4.data()};
+    auto resFunc = problem->addResidualFunction(cost, initParams);
+//    problem->initialize();
+}
+
+void GPUSolver4Param::TearDown() {
 //    cudaDeviceReset();
 }
 

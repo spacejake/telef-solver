@@ -279,3 +279,107 @@ void calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params
     _calc_jacobi2Params << < dimGrid, dimBlock >> > (jacobians, jacobians2, params1, params2, nRes, nParams1, nParams2);
     cudaDeviceSynchronize();
 }
+
+
+
+__global__
+void _calc_res4Params(float *residuals,
+                      const float *params1, const float *params2, const float *params3, const float *params4,
+                      const float *measurements, const int nRes,
+                      const int nParams1, const int nParams2, const int nParams3, const int nParams4) {
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+    float a2 = params1[0]*params1[0];
+    float b = params1[1];
+
+    float c3 = params2[0]*params2[0]*params2[0];
+
+    float d3_1 = params3[0]*params3[0]*params3[0];
+    float d_2 = params3[1];
+
+    float e2_1 = params4[0]*params4[0];
+    float e2_2 = params4[1]*params4[1];
+
+    // grid-striding loop
+    for (int i = start_index; i < nRes; i += stride) {
+        float y = (3*a2)*sin(7*b) + c3 + d3_1*d_2 + e2_1*e2_2;
+        residuals[i] = y - measurements[i];
+        //printf("Element: %.2f\n", residuals[i]);
+    }
+}
+
+void calc_res4Params(float *residuals,
+        const float *params1, const float *params2, const float *params3, const float *params4,
+        const float *measurements, const int nRes,
+        const int nParams1, const int nParams2, const int nParams3, const int nParams4) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _calc_res4Params << < dimGrid, dimBlock >> > (residuals,
+            params1, params2, params3, params4,
+            measurements, nRes,
+            nParams1, nParams2, nParams3, nParams4);
+    cudaDeviceSynchronize();
+}
+
+
+__global__
+void _calc_jacobi4Params(float *jacobians1, float *jacobians2, float *jacobians3, float *jacobians4,
+                         const float *params1, const float *params2, const float *params3, const float *params4,
+                         const int nRes, const int nParams1, const int nParams2, const int nParams3, const int nParams4) {
+    // TODO: document column order for jacobians, perhaps give option to switch between.
+    // Must Compute Jacobians in Column order!!!!, Due to cublas dependancy
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+    float a = params1[0];
+    float a2 = a*a;
+    float b = params1[1];
+
+    float c = params2[0];
+    float c2 = c*c;
+    float c3 = c2*c;
+
+    float d1 = params3[0];
+    float d2 = params3[1];
+
+    float e1 = params4[0];
+    float e2 = params4[1];
+
+    float da = 6*a*sin(7*b);
+    float db = 21*a2*cos(7*b);
+    float dc = 3*c2;
+
+    float dd_1 = 3*d1*d1 * d2;
+    float dd_2 = d1*d1*d1;
+
+    float de_1 = 2*e1 * e2*e2;
+    float de_2 = 2*e1*e1 * e2;
+
+    // grid-striding loop
+    for (int i = start_index; i < nRes; i += stride) {
+        // residuals cumputed are f(x) - y, dx = f'(x), y is measurement
+        jacobians1[nRes*0+i] = da;
+        jacobians1[nRes*1+i] = db;
+
+        jacobians2[nRes*0+i] = dc;
+
+        jacobians3[nRes*0+i] = dd_1;
+        jacobians3[nRes*1+i] = dd_2;
+
+        jacobians4[nRes*0+i] = de_1;
+        jacobians4[nRes*1+i] = de_2;
+    }
+}
+
+void calc_jacobi4Params(float *jacobians1, float *jacobians2, float *jacobians3, float *jacobians4,
+                        const float *params1, const float *params2, const float *params3, const float *params4,
+                        const int nRes, const int nParams1, const int nParams2, const int nParams3, const int nParams4) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _calc_jacobi4Params << < dimGrid, dimBlock >> > (jacobians1, jacobians2, jacobians3, jacobians4,
+            params1, params2, params3, params4,
+            nRes,
+            nParams1, nParams2, nParams3, nParams4);
+    cudaDeviceSynchronize();
+}

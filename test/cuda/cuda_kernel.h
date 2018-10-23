@@ -66,3 +66,27 @@ void _calc_jacobi2Params(float *jacobians, float *jacobians2, const float *param
 
 void calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params1, const float *params2,
         const int nRes, const int nParams1, const int nParams2);
+
+
+
+/******************************************************************/
+__global__
+void _calc_res4Params(float *residuals,
+                      const float *params1, const float *params2, const float *params3, const float *params4,
+                      const float *measurements, const int nRes,
+                      const int nParams1, const int nParams2, const int nParams3, const int nParams4);
+
+void calc_res4Params(float *residuals,
+                     const float *params1, const float *params2, const float *params3, const float *params4,
+                     const float *measurements, const int nRes,
+                     const int nParams1, const int nParams2, const int nParams3, const int nParams4);
+
+
+__global__
+void _calc_jacobi4Params(float *jacobians1, float *jacobians2, float *jacobians3, float *jacobians4,
+                         const float *params1, const float *params2, const float *params3, const float *params4,
+                         const int nRes, const int nParams1, const int nParams2, const int nParams3, const int nParams4);
+
+void calc_jacobi4Params(float *jacobians1, float *jacobians2, float *jacobians3, float *jacobians4,
+                        const float *params1, const float *params2, const float *params3, const float *params4,
+                        const int nRes, const int nParams1, const int nParams2, const int nParams3, const int nParams4);

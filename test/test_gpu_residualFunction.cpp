@@ -309,7 +309,7 @@ TEST(Matrix, gpu_multiply_ATxB_BlockAddC2) {
 //    float params_init[] = {0.5,0.5};
 //    GPUResidualBlock::Ptr resBlock = std::make_shared<GPUResidualBlock>(nRes, params);
 //    ParameterBlock::Ptr paramBlock = resBlock->getParameterBlocks().at(0);
-//    cudaMemcpy(paramBlock->getWorkingParameters(), params_init, 2* sizeof(float), cudaMemcpyHostToDevice);
+//    cudaMemcpy(paramBlock->getParameters(), params_init, 2* sizeof(float), cudaMemcpyHostToDevice);
 //
 //    CostFunction::Ptr cost = std::make_shared<TestCostFunction>();
 //
