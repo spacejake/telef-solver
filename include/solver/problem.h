@@ -27,11 +27,27 @@ namespace telef::solver {
 
             for (auto resFunc : residualFuncs) {
                 resFunc->evaluate(getGradient(), evalJacobians_);
+                auto residualBlock = resFunc->getResidualBlock();
+                if (evalJacobians_) {
+                    auto ParamBlocks  = residualBlock->getParameterBlocks();
+//                    std::cout << "Num ParamBlocks: " << ParamBlocks.size() << std::endl;
+                    for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
+
+//                        std::cout << "Num Params: " << paramBlock->numParameters() << std::endl;
+                        resFunc->calcGradients(getGradient()+paramBlock->getOffset(),
+                                paramBlock->getJacobians(), residualBlock->getResiduals(),
+                                residualBlock->numResiduals(), paramBlock->numParameters());
+
+//                        print_array("evaluate::Gradient::computed", getGradient()+paramBlock->getOffset(), paramBlock->numParameters());
+
+//                        print_array("evaluate::Gradient::accumulated", getGradient(), numEffectiveParams());
+                    }
+                }
             }
 
             if (evalJacobians_) {
                 // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
-                //print_array("Gradient", getGradient(), numEffectiveParams());
+//                print_array("calculateHessianBlock::Gradient", getGradient(), numEffectiveParams());
 
                 // Compute Globa Hessian
                 // TODO: write unit tests for global hessian computation
@@ -63,10 +79,12 @@ namespace telef::solver {
 
                             // Compute lower triagle H(row,col) += H(col,row)'
 
-//                            print_array("calculateHessianBlock::Hessian::after", getHessian(), nEffectiveParams*nEffectiveParams );
+//                            print_array("calculateHessianBlock::Hessian", getHessian(), nEffectiveParams*nEffectiveParams );
                         }
                     }
                 }
+
+//                print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
             }
         }
 

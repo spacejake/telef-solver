@@ -78,8 +78,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                 // Compute next step for each parameter
                 for (ParameterBlock::Ptr paramBlock : paramBlocks) {
                     if (!paramBlock->isShared()) {
-                        updateParams(paramBlock->getWorkingParameters(),
-                                     paramBlock->getParameters(),
+                        updateParams(paramBlock->getParameters(),
+                                     paramBlock->getBestParameters(),
                                      problem->getDeltaParameters() + paramBlock->getOffset(),
                                      paramBlock->numParameters());
                     }
@@ -124,8 +124,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                 auto paramBlocks = resBlock->getParameterBlocks();
                 for (ParameterBlock::Ptr paramBlock : paramBlocks) {
                     if (!paramBlock->isShared()) {
-                        copyParams(paramBlock->getParameters(),
-                                   paramBlock->getWorkingParameters(), paramBlock->numParameters());
+                        copyParams(paramBlock->getBestParameters(),
+                                   paramBlock->getParameters(), paramBlock->numParameters());
                     }
                 }
             }

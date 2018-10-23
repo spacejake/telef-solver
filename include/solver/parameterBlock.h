@@ -34,8 +34,8 @@ namespace telef::solver {
         };
 
         virtual void initializeParameters() = 0;
-        virtual float* getWorkingParameters() = 0;
         virtual float* getParameters() = 0;
+        virtual float* getBestParameters() = 0;
 
         virtual float* getJacobians() = 0;
         virtual float* getGradients() = 0;

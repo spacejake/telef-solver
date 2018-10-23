@@ -16,8 +16,8 @@ namespace telef::solver {
         }
 
         virtual ~GPUParameterBlock(){
-            if (workingParameters) SOLVER_CUDA_FREE(workingParameters);
             if (parameters) SOLVER_CUDA_FREE(parameters);
+            if (bestParameters) SOLVER_CUDA_FREE(bestParameters);
 
 
             SOLVER_CUDA_FREE(jacobians);
@@ -34,28 +34,20 @@ namespace telef::solver {
 
         virtual void initializeParameters(){
             if (!isShared()) {
-                cudaMemcpy(workingParameters, resultParameters, nParameters * sizeof(float), cudaMemcpyHostToDevice);
-                cudaMemcpy(parameters, workingParameters, nParameters * sizeof(float), cudaMemcpyDeviceToDevice);
+                cudaMemcpy(parameters, resultParameters, nParameters * sizeof(float), cudaMemcpyHostToDevice);
+                cudaMemcpy(bestParameters, parameters, nParameters * sizeof(float), cudaMemcpyDeviceToDevice);
             }
         }
 
         virtual float* getResultParameters() {
             // FIXME: What if user uses same pointer or doesn't but still considard shared?? Just overwrite it?
             if (!isShared()) {
-                cudaMemcpy(resultParameters, getParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
+                cudaMemcpy(resultParameters, getBestParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
             } else {
-                cudaMemcpy(resultParameters, shared_parameter->getParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
+                cudaMemcpy(resultParameters, shared_parameter->getBestParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
             }
 
             return resultParameters;
-        }
-
-        virtual float* getWorkingParameters(){
-            if (isShared()) {
-                return shared_parameter->getWorkingParameters();
-            } else {
-                return workingParameters;
-            }
         }
 
         virtual float* getParameters(){
@@ -63,6 +55,14 @@ namespace telef::solver {
                 return shared_parameter->getParameters();
             } else {
                 return parameters;
+            }
+        }
+
+        virtual float* getBestParameters(){
+            if (isShared()) {
+                return shared_parameter->getBestParameters();
+            } else {
+                return bestParameters;
             }
         }
 
@@ -76,13 +76,13 @@ namespace telef::solver {
 
         virtual void onShare(){
             // We will be using the shared parameters now
-            SOLVER_CUDA_FREE(workingParameters);
             SOLVER_CUDA_FREE(parameters);
+            SOLVER_CUDA_FREE(bestParameters);
         }
 
     private:
-        float* workingParameters;
         float* parameters;
+        float* bestParameters;
 
         float* jacobians;
         float* gradients;
@@ -90,8 +90,8 @@ namespace telef::solver {
     private:
         void initDeviceMemory() {
 //            printf("ParamBlock with Res:%d and Params:%d\n", nRes, nParams);
-            SOLVER_CUDA_ALLOC_AND_ZERO(&workingParameters, static_cast<size_t>(numParameters()));
             SOLVER_CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(numParameters()));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&bestParameters, static_cast<size_t>(numParameters()));
 
             SOLVER_CUDA_ALLOC_AND_ZERO(&jacobians, static_cast<size_t>(numParameters() * numResiduals()));
             SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(numParameters()));

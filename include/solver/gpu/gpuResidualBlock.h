@@ -34,7 +34,7 @@ namespace telef::solver {
         // TODO: Change to use override keyword instead of virtual
         virtual float* getResiduals(){
             return residuals;
-        };
+        }
 
         virtual float* getWorkingError(){
             return workingError;
