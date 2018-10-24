@@ -15,11 +15,20 @@ namespace telef::solver {
     };
 
     using Options = struct Options {
-        float lambda_initial;
-        float step_up;
-        float step_down;
-        float target_error_change;
+        // lambda = tau * max(Diag(Initial_Hessian)) as initial Dampening factor,
+        // initial_dampening_factor == tau
+        // tau = 1e-6 is considard good if initial parameters are good approximations
+        // use 1e-3 or 1 otherwise
+        // See "Methods For Non-linear Least Square Problems", 2nd edition 2004, Madsen, Nielsen, and Tingleff
+        // This implementation is based on the Lavenberg-Marquart method in the paper above.
+        float initial_dampening_factor;
+
+        // Termination targets
         int max_iterations;
+        int max_num_consecutive_invalid_steps;
+        float error_change_tolerance;
+        float gradient_tolerance;
+
         bool verbose;
     };
 
@@ -31,11 +40,13 @@ namespace telef::solver {
         Options options;
 
         Solver(){
-            options.lambda_initial = 1e-2;
-            options.max_iterations = 1000;
-            options.step_up = 10;
-            options.step_down = 10;
-            options.target_error_change = 1e-4;
+            options.initial_dampening_factor = 1e-3; // for good starting parameter guesses use 1e-6.
+
+            options.max_iterations = 100;
+            options.max_num_consecutive_invalid_steps = 5;
+            options.error_change_tolerance = 1e-8;
+            options.gradient_tolerance = 1e-8;
+
             options.verbose = false;
         }
 

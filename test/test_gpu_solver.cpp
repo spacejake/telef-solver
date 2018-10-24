@@ -39,7 +39,7 @@ TEST_F(GPUSolverTestSimple, solve1) {
 
 TEST_F(GPUSolverTest, solve2) {
 //    solver->options.max_iterations = 500;
-//    solver->options.target_error_change = 1e-6;
+//    solver->options.error_change_tolerance = 1e-6;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -61,7 +61,7 @@ TEST_F(GPUSolverTest, solve2) {
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
     solver->options.max_iterations = 20;
-//    solver->options.target_error_change = 1e-6;
+//    solver->options.error_change_tolerance = 1e-6;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -85,7 +85,7 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
 TEST_F(GPUSolver4Param, MultiParams) {
 //    solver->options.max_iterations = 3;
-//    solver->options.target_error_change = 1e-6;
+//    solver->options.error_change_tolerance = 1e-6;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);

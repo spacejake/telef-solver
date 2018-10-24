@@ -34,6 +34,18 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         init_error += block_error;
     }
 
+    if (evaluateGradient(problem->getGradient(), options.gradient_tolerance)){
+        status = Status::CONVERGENCE;
+        if (options.verbose) {
+            std::stringstream logmsg;
+            logmsg << "Convergence occured in initial step.";
+            std::cout << logmsg.str() << std::endl;
+        }
+    } else {
+        // lambda = tau * max(Diag(Initial_Hessian))
+        initializeLambda(problem->getLambda(), options.initial_dampening_factor, problem->getHessian());
+    }
+
     // outerIter and innerIter is for reporting how many iterations until converging params found
     int outerIter = 1;
     int innerIter = 0;
@@ -43,8 +55,9 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     float iterDerr = 0;
     bool prev_good_iteration = false;
 
+    int consecutive_invalid_steps = 0;
     int iter;
-    for (iter = 0; iter < options.max_iterations; ++iter) {
+    for (iter = 0; iter < options.max_iterations && status == Status::RUNNING; ++iter) {
 
         float newError = 0;
         bool good_step = true; // Determine if all steps are good across parameter and residual blocks
@@ -103,15 +116,32 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             //printf("BlockError:%.4f\n", blockError);
 
             // accumulated good steps, 1 bad step means retry with new step on all?
-            good_step &= true;
+            if( evaluateStep(problem, options.error_change_tolerance) ) {
+                status = Status::CONVERGENCE;
+            }
+
+            good_step = true;
+            consecutive_invalid_steps = 0;
         } else {
             good_step = false;
+            if (consecutive_invalid_steps >= options.max_num_consecutive_invalid_steps) {
+                status = Status::CONVERGENCE_FAILED;
+            }
+
+            consecutive_invalid_steps++;
         }
 
-        if(good_step) {
-            //TODO: Convert to use Dog leg method or classical LM method
-            iterDerr = newError - error;
-            good_iteration = iterDerr <= 0;
+        if(good_step && status == Status::RUNNING) {
+            //TODO: Convert to use Gain Ratio
+//            iterDerr = newError - error;
+            gainRatio = computeGainRatio(problem->getGainRatio(),
+                    error, newError,
+                    problem->getDeltaParameters(), problem->getGradient());
+
+            good_iteration = gainRatio > 0;
+        } else {
+            lambda *= step_up_factor;
+
         }
 
 
@@ -132,7 +162,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
             // Convergence achieved
-            if (-iterDerr < options.target_error_change /*&& prev_good_iteration*/) {
+            if (evaluateGradient()) {
                 status = Status::CONVERGENCE;
             }
         }
@@ -162,14 +192,11 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             }
         }
 
-        if (status != Status::RUNNING){
-            // Stop we have converged or failed
-            break;
+        if (status == Status::RUNNING){
+            // Setup next iteration
+            updateStep(problem->getLambda(), good_iteration);
+            prev_good_iteration = good_iteration;
         }
-
-        // Setup next iteration
-        updateStep(problem->getLambda(), good_iteration);
-        prev_good_iteration = good_iteration;
     }
 
     finalize_result(problem);
