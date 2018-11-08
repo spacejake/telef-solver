@@ -37,6 +37,8 @@ namespace telef::solver {
         cusolverDnHandle_t solver_handle;
         cublasHandle_t cublasHandle;
 
+        float computePredictedGain(float *predGain, float *lambda, float *daltaParams, float *gradient, int nParams);
+
         virtual void initialize_run(Problem::Ptr problem);
 
         virtual void finalize_result(Problem::Ptr problem);
@@ -55,7 +57,51 @@ namespace telef::solver {
         virtual void
         updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep);
 
-        virtual void updateStep(float* lambda, bool goodStep);
+
+        virtual bool evaluateGradient(float *gradient, int nParams, float tolerance);
+
+        /**
+         * convergence reached if
+         *
+         * ||x_new − x|| ≤ ε_2 (||x|| + ε_2) .
+         *
+         * or
+         *
+         * ||h_lm|| ≤ ε_2 (||x|| + ε_2)
+         *
+         * h_lm == deltas
+         *
+         * @param problem
+         * @param tolerance
+         * @return
+         */
+        virtual bool evaluateStep(Problem::Ptr problem, float tolerance);
+        virtual void calcParams2Norm(float* sumSquares, Problem::Ptr problem);
+
+        // TODO: assert lambda is not 0
+        /**
+         * Compute Gain Ratio
+         * gainRatio = (error - newError)/(0.5*Delta^T (lambda * delta + -g))
+         *
+         * Gradient is computed as -g
+         * hlm garuntieed not be 0 because we check before, lambda cannot be 0
+         *
+         * @param gainRatio
+         * @param error
+         * @param newError
+         * @param lambda
+         * @param deltaParams
+         * @param gradient
+         * @param nParams
+         * @return
+         */
+        virtual float computeGainRatio(float *predGain,
+                                       float error, float newError, float *lambda,
+                                       float *deltaParams, float *gradient, int nParams);
+
+        virtual void initializeLambda(float *lambda, float tauFactor, float *hessian, int nParams);
+
+        virtual void updateLambda(float *lambda, float *failFactor, float *predGain, bool goodStep);
 
     private:
         void initHandlers() {
@@ -69,5 +115,6 @@ namespace telef::solver {
             SOLVER_CUDA_ALLOC_AND_ZERO(&down_factor_d, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&up_factor_d, static_cast<size_t>(1));
         }
+
     };
 }

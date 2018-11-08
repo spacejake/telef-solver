@@ -20,6 +20,8 @@ namespace telef::solver {
         virtual ~GPUProblem() {
             cudaFree(workingError);
             cudaFree(lambda);
+            cudaFree(failFactor);
+            cudaFree(predictedGain);
             cudaFree(deltaParams);
             cudaFree(dampeningFactors);
             cudaFree(gradients);
@@ -37,6 +39,14 @@ namespace telef::solver {
 
         virtual float* getLambda() {
             return lambda;
+        }
+
+        virtual float* getFailFactor(){
+            return failFactor;
+        }
+
+        virtual float* getPredictedGain() {
+            return predictedGain;
         }
 
         // Global combined Matricies
@@ -68,6 +78,8 @@ namespace telef::solver {
             // Allocate cuda space
             SOLVER_CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&failFactor, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&predictedGain, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
             SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
@@ -77,11 +89,16 @@ namespace telef::solver {
             SOLVER_CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
         }
 
+
+        void calcGradients(float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
+            calc_gradients(cublasHandle, gradients, jacobians, residuals, nRes, nParams);
+        }
+
         virtual void
-        calculateHessianBlock(float *hessianBlock, const int nEffectiveParams,
-                const float *jacobianA, const int nParamsA,
-                const float *jacobianB, const int nParamsB,
-                const int nResiduals) {
+        calcHessianBlock(float *hessianBlock, const int nEffectiveParams,
+                         const float *jacobianA, const int nParamsA,
+                         const float *jacobianB, const int nParamsB,
+                         const int nResiduals) {
             cudaMatMul_ATxB(cublasHandle, hessianBlock, nEffectiveParams,
                     jacobianA, nResiduals, nParamsA,
                     jacobianB, nResiduals, nParamsB,
@@ -100,6 +117,9 @@ namespace telef::solver {
         float* workingError;
 
         float* lambda;
+        float* failFactor;
+        float* predictedGain;
+
         float* deltaParams;
 
         float* dampeningFactors;

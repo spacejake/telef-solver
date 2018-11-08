@@ -46,6 +46,35 @@ void print_array(const char* msg, const float *arr_d, const int n) {
 }
 
 __inline__ __device__
+float warpReduceMax(float val) {
+    for (int offset = warpSize/2; offset > 0; offset /= 2) {
+        val = max(__shfl_down_sync(0xffffffff, val, offset), val);
+    }
+    return val;
+}
+
+__inline__ __device__
+float blockReduceMax(float val) {
+
+    static __shared__ float shared[32]; // Shared mem for 32 partial sums
+    int lane = threadIdx.x % warpSize;
+    int wid = threadIdx.x / warpSize;
+
+    val = warpReduceMax(val);     // Each warp performs partial reduction
+
+    if (lane==0) shared[wid]=val; // Write reduced value to shared memory
+
+    __syncthreads();              // Wait for all partial reductions
+
+    //read from shared memory only if that warp existed
+    val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : 0;
+
+    if (wid==0) val = warpReduceMax(val); //Final reduce within first warp
+
+    return val;
+}
+
+__inline__ __device__
 float warpReduceSum(float val) {
     for (int offset = warpSize/2; offset > 0; offset /= 2)
         val += __shfl_down_sync(0xffffffff, val, offset);
@@ -74,7 +103,7 @@ float blockReduceSum(float val) {
 }
 
 __global__
-void _calc_error(float* error, const float* residuals, const int nRes){
+void _sum_squares(float *sumSquares, const float *vector, const int nRes){
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
 
@@ -82,12 +111,12 @@ void _calc_error(float* error, const float* residuals, const int nRes){
     // grid-striding loop
     for (int i = start_index; i < nRes; i += stride) {
 //        printf("Thread[%d]::add[%d]: %.2f\n",threadIdx.x, i, residuals[i]);
-        sum += residuals[i]*residuals[i];
+        sum += vector[i]*vector[i];
     }
 
     sum = blockReduceSum(sum);
     if ((threadIdx.x & (warpSize - 1)) == 0) {
-        atomicAdd(error, sum);
+        atomicAdd(sumSquares, sum);
     }
 }
 
@@ -95,39 +124,26 @@ void calc_error(float* error, const float* residuals, const int nRes){
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
-    _calc_error << < dimGrid, dimBlock >> >(error, residuals, nRes);
+    _sum_squares << < dimGrid, dimBlock >> >(error, residuals, nRes);
     cudaDeviceSynchronize();
 }
 
 __global__
-void _cuda_step_down(float* step, float* lambda, const float* factor){
-//    printf("update lambda: %.3f * %.3f = ", lambda[0], factor[0]);
-    lambda[0] *= factor[0];
-//    printf("%.3f\n", lambda[0]);
+void _cuda_lambda_update(float *lambda, const float *failFactor, const float *predGain, const bool goodStep){
+    if (goodStep){
+        float minLambda = 1.f/3.f;
+        float candidateLambda = 1 - pow(2 * gainRatio - 1, 3);
 
-    step[0] = 1 + lambda[0];
-//    printf("step down: 1 + %.3f = %.3f\n", lambda[0], step[0]);
+        lambda[0] *= max(minLambda, candidateLambda);
+        failFactor[0] = 2.f;
+    } else {
+        lambda[0] *= failFactor[0];
+        failFactor[0] *= 2.f;
+    }
 }
 
-/* stepdown (lambda*down)
-* step = 1 + lambda;
-*/
-void cuda_step_down(float* step, float* lambda, const float* factor){
-    _cuda_step_down << < 1, 1 >> >(step, lambda, factor);
-    cudaDeviceSynchronize();
-}
-
-/*
- * step = (1 + lambda * up) / (1 + lambda);
- * stepup (lambda*up)
- */
-__global__
-void _cuda_step_update(float* lambda, const float* factor){
-    lambda[0] *= factor[0];
-}
-
-void cuda_step_update(float* lambda, const float* factor){
-    _cuda_step_update << < 1, 1 >> >(lambda, factor);
+void cuda_lambda_update(float *lambda, const float *failFactor, const float *predGain, const bool goodStep) {
+    _cuda_lambda_update << < 1, 1 >> >(lambda, failFactor, predGain, goodStep);
     cudaDeviceSynchronize();
 }
 
@@ -329,4 +345,58 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
 
     // free resources
     if (info_d) cudaFree(info_d);
+}
+
+__global__
+void _initialize_lambda(float *lambda, float tauFactor, float *hessian, int nParams) {
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    // grid-striding loop
+    int maxH = hessian[0];
+    for (int i = start_index; i < nParams; i += stride) {
+        int diagonal_index = i+nParams*i;
+
+        maxH = max(hessian[diagonal_index], maxH);
+    }
+
+    maxH = blockReduceMax(maxH);
+    if ((threadIdx.x & (warpSize - 1)) == 0) {
+        // Tau is a constant scalar, we are looking for largest Diag(H), but we need to apply a wieght if requested
+        // we could do this in a separate kernel or here. The multiplication only happens once ber block.
+        atomicMax(lambda, tauFactor * maxH);
+    }
+}
+
+/**
+ * Initializes Lambda, lambda = tau * max(Diag(Hessian))
+ *
+ * @param lambda
+ * @param tauFactor
+ * @param hessian
+ * @param nParams
+ */
+void initialize_lambda(float *lambda, float tauFactor, float *hessian, int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _initialize_lambda << < dimGrid, dimBlock >> >(lambda, tauFactor, hessian, nParams);
+    cudaDeviceSynchronize();
+    //print_array("New Params", newParams, nParams);
+}
+
+
+void cuda_norm_inf(cublasHandle_t cublasHandle, float *infNorm, const float *vector, const int nParams){
+    int index = 0;
+    cublasIsamax_v2(cublasHandle, nParams, vector, 1, &index);
+    cudaMemcpy(infNorm, vector + index, sizeof(float), cudaMemcpyDeviceToDevice);
+}
+
+
+void cuda_sum_squares(float* sumSquares, const float* vector, const int nRes){
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _sum_squares << < dimGrid, dimBlock >> >(sumSquares, vector, nRes);
+    cudaDeviceSynchronize();
 }

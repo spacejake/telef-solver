@@ -24,7 +24,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     initialize_run(problem);
 
     //loop through each cost function, initialize all memory with results from given starting params
-    problem->evaluate(true);
+    problem->evaluate();
+    problem->computeDerivatives();
 
     float init_error = 0;
     for (auto resFunc : residualFuncs) {
@@ -34,7 +35,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         init_error += block_error;
     }
 
-    if (evaluateGradient(problem->getGradient(), options.gradient_tolerance)){
+    if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)){
         status = Status::CONVERGENCE;
         if (options.verbose) {
             std::stringstream logmsg;
@@ -43,12 +44,13 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         }
     } else {
         // lambda = tau * max(Diag(Initial_Hessian))
-        initializeLambda(problem->getLambda(), options.initial_dampening_factor, problem->getHessian());
+        initializeLambda(problem->getLambda(), options.initial_dampening_factor,
+                problem->getHessian(), problem->numEffectiveParams());
     }
 
     // outerIter and innerIter is for reporting how many iterations until converging params found
     int outerIter = 1;
-    int innerIter = 0;
+    int innerIter = 1;
 
     float error = init_error;
     // Delta error, between current params and new params we step too
@@ -56,8 +58,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     bool prev_good_iteration = false;
 
     int consecutive_invalid_steps = 0;
-    int iter;
-    for (iter = 0; iter < options.max_iterations && status == Status::RUNNING; ++iter) {
+    int iter = 0;
+    while (status == Status::RUNNING && iter++ < options.max_iterations) {
 
         float newError = 0;
         bool good_step = true; // Determine if all steps are good across parameter and residual blocks
@@ -69,21 +71,20 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         updateHessians(problem->getHessian(), problem->getDampeningFactors(), problem->getLambda(),
                        problem->numEffectiveParams(), prev_good_iteration);
 
-        // Check if decompsition results in a symmetric positive-definite matrix
-        /* TODO: Use steepest descent for non positive-definite matrixies (where solution is not guaranteed to be downhill )
-         * if F00(x) is positive definite
-         *      h := h_n (Cholesky decomposition)
-         * else
-         *      h := h_sd (Steepest descent Direction, h_sd = −F'(x) or -g(x).)
-         * x := x + αh
-         */
         // Solves delta = -(H(x) + lambda * I)^-1 * g(x), x+1 = x + delta
         bool solveSystemSuccess = solveSystem(problem->getDeltaParameters(), problem->getHessianLowTri(),
                 problem->getHessian(), problem->getGradient(),
                 problem->numEffectiveParams());
 
+        // Check if decompsition results in a symmetric positive-definite matrix
         // If the system of equations failed to be evaluated with current step, make another step and try again.
-        if (solveSystemSuccess) {
+
+        // convergence reached if ||h_lm|| ≤ ε_2 (||x|| + ε_2)
+        if( solveSystemSuccess && evaluateStep(problem, options.error_change_tolerance) ) {
+            status = Status::CONVERGENCE;
+            // Save parameters?
+            good_iteration = false;
+        } else if (solveSystemSuccess) {
             // Update Params
             for (auto resFunc : residualFuncs) {
                 auto resBlock = resFunc->getResidualBlock();
@@ -101,7 +102,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             // Evaluate step and new params
             // if prev error was derr <= 0, don't do jacobian recalc
-            problem->evaluate(prev_good_iteration);
+            problem->evaluate();
             float problemError = 0;
             for (auto resFunc : residualFuncs) {
                 auto resBlock = resFunc->getResidualBlock();
@@ -115,15 +116,23 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             //printf("BlockError:%.4f\n", blockError);
 
-            // accumulated good steps, 1 bad step means retry with new step on all?
-            if( evaluateStep(problem, options.error_change_tolerance) ) {
-                status = Status::CONVERGENCE;
-            }
+            /* Compute Gain Ratio
+             * gainRatio = (error - newError)/(0.5*Delta^T (lambda * delta + -g))
+             *
+             * Gradient is computed as -g
+             * hlm garuntieed not be 0 because we check above, lambda cannot be 0
+             *
+             */
+            float gainRatio = computeGainRatio(problem->getPredictedGain(),
+                                               error, newError, problem->getLambda(),
+                                               problem->getDeltaParameters(), problem->getGradient(),
+                                               problem->numEffectiveParams());
 
-            good_step = true;
+            good_iteration = gainRatio > options.gain_ratio_threashold;
+
             consecutive_invalid_steps = 0;
         } else {
-            good_step = false;
+            good_iteration = false;
             if (consecutive_invalid_steps >= options.max_num_consecutive_invalid_steps) {
                 status = Status::CONVERGENCE_FAILED;
             }
@@ -131,24 +140,10 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             consecutive_invalid_steps++;
         }
 
-        if(good_step && status == Status::RUNNING) {
-            //TODO: Convert to use Gain Ratio
-//            iterDerr = newError - error;
-            gainRatio = computeGainRatio(problem->getGainRatio(),
-                    error, newError,
-                    problem->getDeltaParameters(), problem->getGradient());
-
-            good_iteration = gainRatio > 0;
-        } else {
-            lambda *= step_up_factor;
-
-        }
-
-
         if (good_iteration) {
             error = newError;
 
-            //Copy Params that result in improved error
+            //save Params that result in improved error
             for (auto resFunc : residualFuncs) {
                 auto resBlock = resFunc->getResidualBlock();
                 auto paramBlocks = resBlock->getParameterBlocks();
@@ -160,17 +155,40 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                 }
             }
 
+            // Recompute derivatives (jacobian, gradients, Hessian) for best found parameters
+            problem->computeDerivatives();
+
             //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
-            // Convergence achieved
-            if (evaluateGradient()) {
+            // Convergence achieved?
+            if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)) {
                 status = Status::CONVERGENCE;
+            } else {
+                // for next iteration, we should recalculate the 2-norm of our best fitted parameters
+                calcParams2Norm(problem);
             }
         }
 
+        if (status == Status::RUNNING){
+            // Setup next iteration
+            /**
+             *  if (good_iteration) {
+             *      μ := μ ∗ max{ 1/3, 1 − (2*gainRatio − 1)^3 }; ν := 2
+             *  } else {
+             *      μ := μ ∗ ν; ν := 2 ∗ ν
+             *  }
+             *
+             *  ν = Consecutive Failure Factor (failFactor)
+             */
+            updateLambda(problem->getLambda(), problem->getFailFactor(), problem->getPredictedGain(), good_iteration);
+
+            prev_good_iteration = good_iteration;
+        }
+
+        // Verbose logging
         if (options.verbose) {
             std::stringstream logmsg;
 
-            if (prev_good_iteration || iter == 0) {
+            if (prev_good_iteration || iter == 1) {
                 logmsg << "OuterIter: " << std::to_string(outerIter);
             }
             else {
@@ -186,16 +204,10 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             // Counters are for logging
             if (good_iteration) {
                 outerIter++;
-                innerIter = 0;
+                innerIter = 1;
             } else {
                 innerIter++;
             }
-        }
-
-        if (status == Status::RUNNING){
-            // Setup next iteration
-            updateStep(problem->getLambda(), good_iteration);
-            prev_good_iteration = good_iteration;
         }
     }
 
@@ -224,3 +236,5 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
     return status;
 }
+
+

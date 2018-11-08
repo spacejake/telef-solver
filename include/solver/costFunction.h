@@ -33,19 +33,24 @@ namespace telef::solver {
         }
 
         /**
-         * Evaluate residuals (y - f(x)) and the jacobians of f(x) given the parameters x.
-         * Subclasses should provide the interface for the measurements y.
-         *
-         * Jacobians are computeted if computeJacobians == True
-         *
+         * Evaluate residuals (y - f(x)) given the parameters x.
+         * Subclasses should provide the interface for the measurements y, or pass as separate parameters.
+         *         *
          * @param parameters
-         * @param computeJacobians
-         * @return Cost, container of the produced Residuals and Jacobians
          */
-        virtual void evaluate(ResidualBlock::Ptr residualBlock, const bool computeJacobians) const = 0;
+        virtual void evaluate(ResidualBlock::Ptr residualBlock) const = 0;
+
+        /**
+         * Evaluate jacobians of f(x) given the parameters x.
+         * Data computed in evaluate needed for jacobian computation should be shared within this class to prevent
+         * recalculation
+         *         *
+         * @param parameters
+         */
+        virtual void computeJacobinas(ResidualBlock::Ptr residualBlock) const = 0;
 
     protected:
-        // TODO: Changing after adding to a "Problem" will likely cause CUDA allocated space to become invalid, fix
+        // Changing after adding to a "Problem" will likely cause CUDA allocated space to become invalid, call Problem.initialize() to recalculate
         std::vector<int> parameterSizes;
 
     private:

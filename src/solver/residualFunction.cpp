@@ -5,24 +5,17 @@
 
 using namespace telef::solver;
 
-void ResidualFunction::evaluate(float *gradient, bool evalJacobians_) {
-    costFunction->evaluate(residualBlock, evalJacobians_);
+void ResidualFunction::evaluate() {
+    costFunction->evaluate(residualBlock);
+}
 
-//    if (evalJacobians_) {
-//        auto ParamBlocks  = residualBlock->getParameterBlocks();
-////        std::cout << "Num ParamBlocks: " << ParamBlocks.size() << std::endl;
-//        for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
-//
-////            std::cout << "Num Params: " << paramBlock->numParameters() << std::endl;
-//            calcGradients(gradient+paramBlock->getOffset(),
-//                          paramBlock->getJacobians(), residualBlock->getResiduals(),
-//                          residualBlock->numResiduals(), paramBlock->numParameters());
-//
-//            print_array("evaluate::Gradient", gradient, paramBlock->numParameters());
-////
-////            calcHessians(paramBlock->getHessians(),
-////                         paramBlock->getJacobians(),
-////                         residualBlock->numResiduals(), paramBlock->numParameters());
-//        }
+void ResidualFunction::computeJacobians(/*float *gradient_*/) {
+    costFunction->computeJacobinas(residualBlock);
+
+//    auto ParamBlocks  = residualBlock->getParameterBlocks();
+//    for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
+//        calcGradients(gradient_+paramBlock->getOffset(),
+//                      paramBlock->getJacobians(), residualBlock->getResiduals(),
+//                      residualBlock->numResiduals(), paramBlock->numParameters());
 //    }
 }

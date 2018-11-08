@@ -25,12 +25,6 @@ float GPUSolver::calcError(float *error, const float *residuals, const int nRes)
 void GPUSolver::initialize_run(Problem::Ptr problem) {
     //cudaDeviceReset();
     // Initialize step factors
-    float downFactor = 1 / options.step_down;
-    cudaMemcpy(down_factor_d, &downFactor, sizeof(float), cudaMemcpyHostToDevice );
-    cudaMemcpy(up_factor_d, &options.step_up, sizeof(float), cudaMemcpyHostToDevice );
-
-    float inital_step = options.lambda_initial;
-
     auto residualFuncs = problem->getResidualFunctions();
 
     std::shared_ptr<GPUProblem> gpuProblem = std::dynamic_pointer_cast<GPUProblem>(problem);
@@ -38,16 +32,8 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
         gpuProblem->setCublasHandle(cublasHandle);
     }
 
-    // Iitialize step values
-    float* lambda = problem->getLambda();
-
     //Initialize Total Error
-    float* problemWorkError = problem->getWorkingError();
-
-    SOLVER_CUDA_CHECK(cudaMemcpy(lambda, &options.lambda_initial, sizeof(float), cudaMemcpyHostToDevice));
-    SOLVER_CUDA_CHECK(cudaMemset(problemWorkError, 0, sizeof(float)));
-
-//    print_array("Init::Lambda:", lambda, 1);
+    SOLVER_CUDA_CHECK(cudaMemset(problem->getWorkingError(), 0, sizeof(float)));
 
     // Initialize Dampening Factors
     float* dampeningFactors = problem->getDampeningFactors();
@@ -61,9 +47,7 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
 
         // Iitialize step values
         auto resBlock = resFunc->getResidualBlock();
-        float* workError = resBlock->getWorkingError();
-
-        SOLVER_CUDA_CHECK(cudaMemset(workError, 0, sizeof(float)));
+        SOLVER_CUDA_CHECK(cudaMemset(resBlock->getWorkingError(), 0, sizeof(float)));
 
         //TODO: Initialize Parameters in init step, currently in setInitialParams
         //      This is so CPU? and GPU implementations can copy parameters to working params or on to GPU
@@ -88,13 +72,6 @@ void GPUSolver::finalize_result(Problem::Ptr problem) {
     }
 }
 
-void GPUSolver::updateStep(float* lambda, bool goodStep) {
-    if (goodStep) {
-        cuda_step_update(lambda, down_factor_d);
-    } else {
-        cuda_step_update(lambda, up_factor_d);
-    }
-}
 
 void
 GPUSolver::updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep) {
@@ -152,4 +129,104 @@ bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const floa
     }
 
     return isPosDefMat;
+}
+
+bool GPUSolver::evaluateGradient(float *gradient, int nParams, float tolerance) {
+    // TODO: Sum(gradients)
+    // TODO: Return math::norm_inf(g) <= e_1
+    int index = 0;
+    float iNorm_h = 0;
+
+    cublasIsamax_v2(cublasHandle, nParams, gradient, 1, &index);
+    SOLVER_CUDA_CHECK(cudaMemcpy(&iNorm_h, gradient + index, sizeof(float), cudaMemcpyDeviceToHost));
+
+    return iNorm_h <= tolerance;
+}
+
+bool GPUSolver::evaluateStep(Problem::Ptr problem, float tolerance) {
+    //TODO: 2-norm(deltas) ||h_lm||
+    //TODO: 2-norm(x_params) ||x||
+    //TODO: return ||h_lm|| ≤ ε_2 (||x|| + ε_2)
+
+    float delta_2norm=0.0f;
+    cublasSnrm2_v2(cublasHandle, problem->numEffectiveParams(), problem->getDeltaParameters(), 1, &delta_2norm);
+
+    //TODO: move to separate function, re-evaluate only when parameters updated.
+    //Sum params
+    float param_sumSquares = 0.0f;
+    SOLVER_CUDA_CHECK(cudaMemcpy(&param_sumSquares, problem->getParamSumSquares(), sizeof(float), cudaMemcpyDeviceToHost));
+
+    float param_2norm = sqrtf(param_sumSquares);
+
+    return delta_2norm <= tolerance * (param_2norm + tolerance);
+}
+
+
+float Solver::calcParams2Norm(float* sumSquares, Problem::Ptr problem) {
+    float param_sumSquares = 0.0f;
+    cudaMemset(&sumSquares, 0, static_cast<float>(1));
+
+    auto residualFuncs = problem->getResidualFunctions();
+    for(auto resFunc : residualFuncs) {
+        auto resBlock = resFunc->getResidualBlock();
+        for(auto paramBlock : resBlock->getParameterBlocks()){
+            if (!paramBlock->isShared()) {
+                // Sum Squared values
+                cuda_sum_squares(sumSquares, paramBlock->getBestParameters(), paramBlock->numParameters());
+            }
+        }
+    }
+
+    SOLVER_CUDA_CHECK(cudaMemcpy(&param_sumSquares, problem->getParamSumSquares(), sizeof(float), cudaMemcpyDeviceToHost));
+
+    return
+}
+
+float GPUSolver::computeGainRatio(float *predGain, float error, float newError, float *lambda, float *deltaParams,
+                                  float *gradient, int nParams) {
+    //TODO: Compute Gain ratio
+    /*
+     * double l = (F_x - F_xnew) / predictedGain;
+     */
+
+    float actualGain = error - newError;
+    float predictGain = computePredictedGain(predGain, lambda, deltaParams, gradient, nParams);
+    float gainRatio = actualGain / predictGain;
+
+    return gainRatio;
+}
+
+float GPUSolver::computePredictedGain(float *predGain, float *lambda, float *daltaParams, float *gradient, int nParams) {
+    //predGain = 0.5*delta^T (lambda * delta + -g)
+    /*
+     * VECTORTYPE tmp(h_lm);
+     * tmp *= lambda;
+     * tmp += -g;
+     * tmp.array() *= h_lm.array();
+     * double predGain = tmp.sum();
+     */
+    float predGain_host;
+
+    //TODO: impl gpu kernal
+    return predGain_host;
+}
+
+void GPUSolver::initializeLambda(float *lambda, float tauFactor, float *hessian, int nParams) {
+    // lambda = tau * max(Diag(Initial_Hessian))
+    assert(tauFactor > 0 && "Tau Factor must be greater than 0");
+    initialize_lambda(lambda, tauFactor, hessian, nParams);
+}
+
+
+void GPUSolver::updateLambda(float *lambda, float *failFactor, float *predGain, bool goodStep){
+    /*
+     * if (good_iteration) {
+     *    μ := μ ∗ max{ 1/3, 1 − (2*gainRatio − 1)^3 }; ν := 2
+     * } else {
+     *    μ := μ ∗ ν; ν := 2 ∗ ν
+     * }
+     *
+     * ν = Consecutive Failure Factor (failFactor)
+     */
+    cuda_lambda_update(lambda, failFactor, predGain, goodStep);
 }

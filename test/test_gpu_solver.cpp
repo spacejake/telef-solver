@@ -178,7 +178,7 @@ TEST_F(GPUSolver4Param, MultiParams) {
 //    utils::CUDA_ALLOC_AND_COPY(&lambda, &lambda_h, static_cast<size_t >(1));
 //    utils::CUDA_ALLOC_AND_COPY(&factor, &factor_h, static_cast<size_t >(1));
 //
-//    cuda_step_update(lambda, factor);
+//    cuda_lambda_update(lambda, factor);
 //    cudaDeviceSynchronize();
 //
 //    cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
@@ -187,7 +187,7 @@ TEST_F(GPUSolver4Param, MultiParams) {
 //
 //    EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 //
-//    cuda_step_update(lambda, factor);
+//    cuda_lambda_update(lambda, factor);
 //    cudaDeviceSynchronize();
 //
 //    cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
@@ -212,7 +212,7 @@ TEST_F(GPUSolver4Param, MultiParams) {
 //    utils::CUDA_ALLOC_AND_COPY(&lambda, &lambda_h, static_cast<size_t >(1));
 //    utils::CUDA_ALLOC_AND_COPY(&factor, &factor_h, static_cast<size_t >(1));
 //
-//    cuda_step_update(lambda, factor);
+//    cuda_lambda_update(lambda, factor);
 //    cudaDeviceSynchronize();
 //
 //    cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);
@@ -221,7 +221,7 @@ TEST_F(GPUSolver4Param, MultiParams) {
 //
 //    EXPECT_THAT(lambda_h, FloatNear(real_lambda, ferr));
 //
-//    cuda_step_update(lambda, factor);
+//    cuda_lambda_update(lambda, factor);
 //    cudaDeviceSynchronize();
 //
 //    cudaMemcpy(&lambda_h, lambda, sizeof(float), cudaMemcpyDeviceToHost);

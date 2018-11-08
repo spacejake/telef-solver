@@ -23,6 +23,8 @@ namespace telef::solver {
         // This implementation is based on the Lavenberg-Marquart method in the paper above.
         float initial_dampening_factor;
 
+        float gain_ratio_threashold;
+
         // Termination targets
         int max_iterations;
         int max_num_consecutive_invalid_steps;
@@ -46,6 +48,7 @@ namespace telef::solver {
             options.max_num_consecutive_invalid_steps = 5;
             options.error_change_tolerance = 1e-8;
             options.gradient_tolerance = 1e-8;
+            options.gain_ratio_threashold = 0; //Nielsen (1999)
 
             options.verbose = false;
         }
@@ -89,10 +92,84 @@ namespace telef::solver {
         virtual void
         updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep) = 0;
 
-        virtual void updateStep(float* lambda, bool goodStep) = 0;
+        /**
+         * convergence reached if
+         *
+         * ||x_new − x|| ≤ ε_2 (||x|| + ε_2) .
+         *
+         * or
+         *
+         * ||h_lm|| ≤ ε_2 (||x|| + ε_2)
+         *
+         * h_lm == deltas
+         *
+         * @param problem
+         * @param tolerance
+         * @return
+         */
+        virtual bool evaluateStep(Problem::Ptr problem, float tolerance) = 0;
 
 //        //TODO: functions to help evaluate convergence??
 //        virtual bool evaluateStep() = 0;
 //        virtual bool evaluateConvergence() = 0;
+
+        /**
+         * sum(gradient) < tolerance
+         * @param gradient
+         * @param nParams
+         * @param tolerance, must be grater than 0
+         * @return True if sum(Gradient) is below tolerance
+         */
+        virtual bool evaluateGradient(float *gradient, int nParams, float tolerance) = 0;
+
+
+
+        // TODO: assert lambda is not 0
+        /**
+         * Compute Gain Ratio
+         * gainRatio = (error - newError)/(0.5*Delta^T (lambda * delta + -g))
+         *
+         * Gradient is computed as -g
+         * hlm garuntieed not be 0 because we check before, lambda cannot be 0
+         *
+         * @param gainRatio
+         * @param error
+         * @param newError
+         * @param lambda
+         * @param deltaParams
+         * @param gradient
+         * @param nParams
+         * @return CPU copied version of Gainratio
+         */
+        virtual float computeGainRatio(float *predGain,
+                                       float error, float newError, float *lambda,
+                                       float *deltaParams, float *gradient, int nParams) = 0;
+
+        /**
+         * lambda = tau * max(Diag(Initial_Hessian))
+         *
+         * @param lambda
+         * @param tauFactor
+         * @param hessian
+         * @param nParams
+         */
+        virtual void initializeLambda(float *lambda, float tauFactor, float *hessian, int nParams) = 0;
+
+        /**
+         *  if (good_iteration) {
+         *      μ := μ ∗ max{ 1/3, 1 − (2*gainRatio − 1)^3 }; ν := 2
+         *  } else {
+         *      μ := μ ∗ ν; ν := 2 ∗ ν
+         *  }
+         *
+         *  ν = Consecutive Failure Factor (failFactor)
+         * @param lambda
+         * @param failFactor
+         * @param predGain
+         * @param goodStep
+         */
+        virtual void updateLambda(float *lambda, float *failFactor, float *predGain, bool goodStep) = 0;
+
+        virtual void calcParams2Norm(Problem::Ptr problem) = 0;
     };
 }

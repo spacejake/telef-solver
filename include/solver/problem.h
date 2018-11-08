@@ -17,75 +17,76 @@ namespace telef::solver {
                 nJacobianBlockRows(0), nJacobianBlockCols(0), jacobianBlocks(){}
         virtual ~Problem(){}
 
-        float evaluate(bool evalJacobians_){
-            if (evalJacobians_) {
-                // Set Global Gradients and Hessian to zero
-                cudaMemset(getGradient(), 0, nEffectiveParams*sizeof(float));
-                cudaMemset(getHessian(), 0, nEffectiveParams*nEffectiveParams*sizeof(float));
+        void evaluate(){
+           for (auto resFunc : residualFuncs) {
+               resFunc->evaluate();
+           }
+        }
 
-            }
+
+        // TODO: Maintain Block paradyme, move global gradient and hessian to ProblemBlock?
+        /**
+         * Computes the Derivatives Jacobian, Gradients, and Hessian matrices.
+         * Jacobian blocks stored in each parameterBlock. The Global gradients and Hessian is stored here.
+         */
+        void computeDerivatives(){
+            // Set Global Gradients and Hessian to zero
+            cudaMemset(getGradient(), 0, nEffectiveParams*sizeof(float));
+            cudaMemset(getHessian(), 0, nEffectiveParams*nEffectiveParams*sizeof(float));
+
 
             for (auto resFunc : residualFuncs) {
-                resFunc->evaluate(getGradient(), evalJacobians_);
+                resFunc->computeJacobians();
                 auto residualBlock = resFunc->getResidualBlock();
-                if (evalJacobians_) {
-                    auto ParamBlocks  = residualBlock->getParameterBlocks();
-//                    std::cout << "Num ParamBlocks: " << ParamBlocks.size() << std::endl;
-                    for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
+                auto ParamBlocks  = residualBlock->getParameterBlocks();
+                for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
 
-//                        std::cout << "Num Params: " << paramBlock->numParameters() << std::endl;
-                        resFunc->calcGradients(getGradient()+paramBlock->getOffset(),
-                                paramBlock->getJacobians(), residualBlock->getResiduals(),
-                                residualBlock->numResiduals(), paramBlock->numParameters());
+                    calcGradients(getGradient()+paramBlock->getOffset(),
+                                  paramBlock->getJacobians(), residualBlock->getResiduals(),
+                                  residualBlock->numResiduals(), paramBlock->numParameters());
 
-//                        print_array("evaluate::Gradient::computed", getGradient()+paramBlock->getOffset(), paramBlock->numParameters());
-
-//                        print_array("evaluate::Gradient::accumulated", getGradient(), numEffectiveParams());
-                    }
                 }
             }
 
-            if (evalJacobians_) {
-                // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
-//                print_array("calculateHessianBlock::Gradient", getGradient(), numEffectiveParams());
+            // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
+//            print_array("calculateHessianBlock::Gradient", getGradient(), numEffectiveParams());
 
-                // Compute Globa Hessian
-                // TODO: write unit tests for global hessian computation
-                // TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
-                for (int hBlkRow = 0; hBlkRow < nJacobianBlockCols; hBlkRow++) {
-                    for (int hBlkCol = 0; hBlkCol < nJacobianBlockCols; hBlkCol++) {
-                        for (int i = 0; i < nJacobianBlockRows; i++) {
-                            auto paramT = getFromJBlock(i, hBlkCol);
-                            auto param = getFromJBlock(i, hBlkRow);
-                            if (paramT == nullptr || param == nullptr) {
-                                // Skip block, will result in 0s since we add the result to the Global hessian
-                                continue;
-                            }
-
-                            int colOffset = paramT->getOffset();
-                            int rowOffset = param->getOffset();
-
-                            int hessianBlocklOffset = rowOffset * nEffectiveParams + colOffset;
-
-                            // Compute upper triagle J()
-                            // J(i,col)' * J(i,row) will share same number of residuals
-                            // Because the hessian matrix can be much larger and we want to insert/add the computed results
-                            // into the hessian, we send the method the total size of the hessian so proper offsets can be
-                            // computed. We will only be computing a square Hessian.
-                            calculateHessianBlock(getHessian() + hessianBlocklOffset, nEffectiveParams,
-                                                  paramT->getJacobians(), paramT->numParameters(),
-                                                  param->getJacobians(), param->numParameters(),
-                                                  paramT->numResiduals());
-
-                            // Compute lower triagle H(row,col) += H(col,row)'
-
-//                            print_array("calculateHessianBlock::Hessian", getHessian(), nEffectiveParams*nEffectiveParams );
+            // Compute Globa Hessian
+            // TODO: write unit tests for global hessian computation
+            // TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
+            for (int hBlkRow = 0; hBlkRow < nJacobianBlockCols; hBlkRow++) {
+                for (int hBlkCol = 0; hBlkCol < nJacobianBlockCols; hBlkCol++) {
+                    for (int i = 0; i < nJacobianBlockRows; i++) {
+                        auto paramT = getFromJBlock(i, hBlkCol);
+                        auto param = getFromJBlock(i, hBlkRow);
+                        if (paramT == nullptr || param == nullptr) {
+                            // Skip block, will result in 0s since we add the result to the Global hessian
+                            continue;
                         }
+
+                        int colOffset = paramT->getOffset();
+                        int rowOffset = param->getOffset();
+
+                        int hessianBlocklOffset = rowOffset * nEffectiveParams + colOffset;
+
+                        // Compute upper triagle J()
+                        // J(i,col)' * J(i,row) will share same number of residuals
+                        // Because the hessian matrix can be much larger and we want to insert/add the computed results
+                        // into the hessian, we send the method the total size of the hessian so proper offsets can be
+                        // computed. We will only be computing a square Hessian.
+                        calcHessianBlock(getHessian() + hessianBlocklOffset, nEffectiveParams,
+                                         paramT->getJacobians(), paramT->numParameters(),
+                                         param->getJacobians(), param->numParameters(),
+                                         paramT->numResiduals());
+
+                        // Compute lower triagle H(row,col) += H(col,row)'
+
+//                         print_array("calculateHessianBlock::Hessian", getHessian(), nEffectiveParams*nEffectiveParams );
                     }
                 }
-
-//                print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
             }
+
+//            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
         }
 
         float setError(float error_) {
@@ -209,18 +210,25 @@ namespace telef::solver {
             onInitialize();
         }
 
+
+        virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams) = 0;
         virtual void
-        calculateHessianBlock(float *hessianBlock, const int nEffectiveParams, const float *jacobianA, const int nParamsA,
-                                      const float *jacobianB, const int nParamsB, const int nResiduals) = 0;
+        calcHessianBlock(float *hessianBlock, const int nEffectiveParams, const float *jacobianA, const int nParamsA,
+                         const float *jacobianB, const int nParamsB, const int nResiduals) = 0;
 
         virtual ResidualFunction::Ptr createResidualFunction(CostFunction::Ptr costFunc_) = 0;
 
-        // TODO: Move to a different Block class?
+        // TODO: Move data getters to a different Block class?
         virtual float* getLambda() = 0;
+
+        virtual float* getFailFactor() = 0;
+        virtual float* getPredictedGain() = 0;
 
         virtual float* getWorkingError() = 0;
 
         // Global combined Matricies
+        //virtual float* getParameters() = 0; // Actual Parameters, each parameter is pointing to the pointer+offset
+        //virtual float* getBestParameters() = 0; // Actual Best Parameters, each parameter is pointing to the pointer+offset
         virtual float* getDeltaParameters() = 0;
         virtual float* getDampeningFactors() = 0;
         virtual float* getGradient() = 0;

@@ -6,6 +6,7 @@
 
 namespace telef::solver {
 
+    // TODO: Remove GPUResidualFunction class??? Seems we don't need this currently
     class GPUResidualFunction : public ResidualFunction {
 
     public:
@@ -19,9 +20,6 @@ namespace telef::solver {
 
         virtual ~GPUResidualFunction(){
         }
-
-        virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams);
-        virtual void calcHessians(float* hessians, float* jacobians, int nRes, int nParams);
 
         void setCublasHandle(cublasHandle_t cublasHandle_){
             cublasHandle = cublasHandle_;

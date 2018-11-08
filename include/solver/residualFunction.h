@@ -4,6 +4,9 @@
 
 
 namespace telef::solver {
+    /**
+     * Residual Funciton Pairs Cost function and ResidualBlocks together, so they can be maintained in same data structure
+     */
     class ResidualFunction {
     public:
         using Ptr = std::shared_ptr<ResidualFunction>;
@@ -19,10 +22,8 @@ namespace telef::solver {
 
         virtual ~ResidualFunction(){}
 
-        void evaluate(float *gradient, bool evalJacobians_);
-
-        virtual void calcGradients(float* gradients, float* jacobians, float* residuals, int nRes, int nParams) = 0;
-        virtual void calcHessians(float* hessians, float* jacobians, int nRes, int nParams) = 0;
+        void evaluate();
+        void computeJacobians();
 
 //        void initParams(std::vector<float*> initParams) {
 //            residualBlock->initParams(initParams);
