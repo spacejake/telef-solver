@@ -20,9 +20,15 @@ namespace telef::solver {
         virtual ~GPUProblem() {
             cudaFree(workingError);
             cudaFree(lambda);
+
+            cudaFree(parameters);
+            cudaFree(bestParameters);
             cudaFree(deltaParams);
+
             cudaFree(dampeningFactors);
+
             cudaFree(gradients);
+
             cudaFree(hessian);
             cudaFree(hessianLowTri);
         }
@@ -40,6 +46,14 @@ namespace telef::solver {
         }
 
         // Global combined Matricies
+        virtual float* getParameters() {
+            return parameters;
+        }
+
+        virtual float* getBestParameters() {
+            return bestParameters;
+        }
+
         virtual float* getDeltaParameters() {
             return deltaParams;
         }
@@ -68,6 +82,9 @@ namespace telef::solver {
             // Allocate cuda space
             SOLVER_CUDA_ALLOC_AND_ZERO(&workingError, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
+
+            SOLVER_CUDA_ALLOC_AND_ZERO(&parameters, static_cast<size_t>(nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&bestParameters, static_cast<size_t>(nEffectiveParams));
             SOLVER_CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
             SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
@@ -100,6 +117,10 @@ namespace telef::solver {
         float* workingError;
 
         float* lambda;
+
+
+        float* parameters;
+        float* bestParameters;
         float* deltaParams;
 
         float* dampeningFactors;

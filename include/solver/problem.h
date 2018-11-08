@@ -221,6 +221,8 @@ namespace telef::solver {
         virtual float* getWorkingError() = 0;
 
         // Global combined Matricies
+        virtual float* getParameters() = 0;
+        virtual float* getBestParameters() = 0;
         virtual float* getDeltaParameters() = 0;
         virtual float* getDampeningFactors() = 0;
         virtual float* getGradient() = 0;
