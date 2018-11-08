@@ -21,6 +21,19 @@ using Clock=std::chrono::high_resolution_clock;
 #define BLOCKSIZE 128
 
 
+__device__
+int floatToOrderedInt( float floatVal )
+{
+    int intVal = __float_as_int( floatVal );
+
+    return (intVal >= 0 ) ? intVal : intVal ^ 0x7FFFFFFF;
+}
+
+__device__ float orderedIntToFloat( int intVal )
+{
+    return __int_as_float( (intVal >= 0) ? intVal : intVal ^ 0x7FFFFFFF );
+}
+
 __global__
 void _print_arr(const float *arr_d, const int n) {
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
@@ -129,10 +142,10 @@ void calc_error(float* error, const float* residuals, const int nRes){
 }
 
 __global__
-void _cuda_lambda_update(float *lambda, const float *failFactor, const float *predGain, const bool goodStep){
+void _cuda_lambda_update(float *lambda, float *failFactor, const float *gainRatio, const bool goodStep){
     if (goodStep){
-        float minLambda = 1.f/3.f;
-        float candidateLambda = 1 - pow(2 * gainRatio - 1, 3);
+        float minLambda = 1.f / 3.f;
+        float candidateLambda = 1 - pow(2 * gainRatio[0] - 1, 3);
 
         lambda[0] *= max(minLambda, candidateLambda);
         failFactor[0] = 2.f;
@@ -142,8 +155,8 @@ void _cuda_lambda_update(float *lambda, const float *failFactor, const float *pr
     }
 }
 
-void cuda_lambda_update(float *lambda, const float *failFactor, const float *predGain, const bool goodStep) {
-    _cuda_lambda_update << < 1, 1 >> >(lambda, failFactor, predGain, goodStep);
+void cuda_lambda_update(float *lambda, float *failFactor, const float *gainRatio, const bool goodStep) {
+    _cuda_lambda_update << < 1, 1 >> >(lambda, failFactor, gainRatio, goodStep);
     cudaDeviceSynchronize();
 }
 
@@ -348,12 +361,13 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
 }
 
 __global__
-void _initialize_lambda(float *lambda, float tauFactor, float *hessian, int nParams) {
+void _initialize_lambda(int *lambda, float tauFactor, float *hessian, int nParams) {
     int start_index = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x; // total number of threads in the grid
 
     // grid-striding loop
-    int maxH = hessian[0];
+    int diagonal_start_index = start_index+nParams*start_index;
+    float maxH = hessian[diagonal_start_index];
     for (int i = start_index; i < nParams; i += stride) {
         int diagonal_index = i+nParams*i;
 
@@ -364,8 +378,14 @@ void _initialize_lambda(float *lambda, float tauFactor, float *hessian, int nPar
     if ((threadIdx.x & (warpSize - 1)) == 0) {
         // Tau is a constant scalar, we are looking for largest Diag(H), but we need to apply a wieght if requested
         // we could do this in a separate kernel or here. The multiplication only happens once ber block.
-        atomicMax(lambda, tauFactor * maxH);
+        float weightedMaxH = tauFactor * maxH;
+        atomicMax(lambda, floatToOrderedInt(weightedMaxH));
     }
+}
+
+__global__
+void _convertTo(float* out, int* in) {
+    out[0] = orderedIntToFloat(in[0]);
 }
 
 /**
@@ -379,10 +399,18 @@ void _initialize_lambda(float *lambda, float tauFactor, float *hessian, int nPar
 void initialize_lambda(float *lambda, float tauFactor, float *hessian, int nParams) {
     dim3 dimBlock(BLOCKSIZE);
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
+    int *lamda_int;
+    cudaMalloc(&lamda_int, sizeof(int));
+    cudaMemset(lamda_int, 0, sizeof(int));
 
-    _initialize_lambda << < dimGrid, dimBlock >> >(lambda, tauFactor, hessian, nParams);
+    _initialize_lambda << < dimGrid, dimBlock >> >(lamda_int, tauFactor, hessian, nParams);
+
+    // AtomicMax only works for integres, here we covert lambda into a float.
+    _convertTo << <1,1>> >(lambda, lamda_int);
     cudaDeviceSynchronize();
     //print_array("New Params", newParams, nParams);
+
+    cudaFree(lamda_int);
 }
 
 
@@ -398,5 +426,53 @@ void cuda_sum_squares(float* sumSquares, const float* vector, const int nRes){
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _sum_squares << < dimGrid, dimBlock >> >(sumSquares, vector, nRes);
+    cudaDeviceSynchronize();
+}
+__global__
+void _cuda_sqrt(float *vector, int n) {
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    // grid-striding loop
+    for (int i = start_index; i < n; i += stride) {
+        vector[i] = sqrt(vector[i]);
+    }
+}
+
+void cuda_sqrt(float* vector, int n){
+    int blockSize = min(BLOCKSIZE, n);
+    dim3 dimBlock(blockSize);
+    dim3 dimGrid((n + blockSize - 1) / blockSize);
+
+    _cuda_sqrt << < dimGrid, dimBlock >> >(vector, n);
+    cudaDeviceSynchronize();
+}
+
+__global__
+void _compute_predicted_gain(float* predGain, float *lambda, float *daltaParams, float *gradient, int nParams){
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    // grid-striding loop
+    float sum = 0;
+    for (int i = start_index; i < nParams; i += stride) {
+        // predGain = 0.5*delta^T (lambda * delta + -g)
+        // NOTE: gradient is computed as -g
+        float elemGain = lambda[0] * daltaParams[i] + gradient[i];
+        elemGain *= 0.5 * daltaParams[i];
+        sum += elemGain;
+    }
+
+    sum = blockReduceSum(sum);
+    if ((threadIdx.x & (warpSize - 1)) == 0) {
+        atomicAdd(predGain, sum);
+    }
+}
+
+void compute_predicted_gain(float* predGain, float *lambda, float *daltaParams, float *gradient, int nParams){
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _compute_predicted_gain << < dimGrid, dimBlock >> >(predGain, lambda, daltaParams, gradient, nParams);
     cudaDeviceSynchronize();
 }

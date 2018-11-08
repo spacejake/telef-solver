@@ -223,12 +223,15 @@ namespace telef::solver {
 
         virtual float* getFailFactor() = 0;
         virtual float* getPredictedGain() = 0;
+        virtual float* getParams2Norm() = 0;
 
         virtual float* getWorkingError() = 0;
 
         // Global combined Matricies
-        //virtual float* getParameters() = 0; // Actual Parameters, each parameter is pointing to the pointer+offset
-        //virtual float* getBestParameters() = 0; // Actual Best Parameters, each parameter is pointing to the pointer+offset
+        // TODO: Actual Parameters, each parameter is pointing to the pointer+offset
+        //virtual float* getParameters() = 0;
+        // TODO: Actual Best Parameters, each parameter is pointing to the pointer+offset
+        //virtual float* getBestParameters() = 0;
         virtual float* getDeltaParameters() = 0;
         virtual float* getDampeningFactors() = 0;
         virtual float* getGradient() = 0;

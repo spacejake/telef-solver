@@ -47,7 +47,7 @@ namespace telef::solver {
          *         *
          * @param parameters
          */
-        virtual void computeJacobinas(ResidualBlock::Ptr residualBlock) const = 0;
+        virtual void computeJacobians(ResidualBlock::Ptr residualBlock) const = 0;
 
     protected:
         // Changing after adding to a "Problem" will likely cause CUDA allocated space to become invalid, call Problem.initialize() to recalculate

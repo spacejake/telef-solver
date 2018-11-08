@@ -16,12 +16,15 @@ namespace telef::solver {
         using Ptr = std::shared_ptr<GPUProblem>;
         using ConstPtr = std::shared_ptr<const GPUProblem>;
 
-        GPUProblem() : Problem() {}
+        GPUProblem() : Problem() {
+        }
+
         virtual ~GPUProblem() {
             cudaFree(workingError);
             cudaFree(lambda);
             cudaFree(failFactor);
             cudaFree(predictedGain);
+            cudaFree(parameters2norm);
             cudaFree(deltaParams);
             cudaFree(dampeningFactors);
             cudaFree(gradients);
@@ -47,6 +50,10 @@ namespace telef::solver {
 
         virtual float* getPredictedGain() {
             return predictedGain;
+        }
+
+        virtual float* getParams2Norm() {
+            return parameters2norm;
         }
 
         // Global combined Matricies
@@ -80,6 +87,7 @@ namespace telef::solver {
             SOLVER_CUDA_ALLOC_AND_ZERO(&lambda, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&failFactor, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&predictedGain, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&parameters2norm, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
             SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
@@ -119,6 +127,7 @@ namespace telef::solver {
         float* lambda;
         float* failFactor;
         float* predictedGain;
+        float* parameters2norm;
 
         float* deltaParams;
 

@@ -37,7 +37,7 @@ namespace telef::solver {
         cusolverDnHandle_t solver_handle;
         cublasHandle_t cublasHandle;
 
-        float computePredictedGain(float *predGain, float *lambda, float *daltaParams, float *gradient, int nParams);
+        void computePredictedGain(float *predGain, float *lambda, float *daltaParams, float *gradient, int nParams);
 
         virtual void initialize_run(Problem::Ptr problem);
 
@@ -76,7 +76,7 @@ namespace telef::solver {
          * @return
          */
         virtual bool evaluateStep(Problem::Ptr problem, float tolerance);
-        virtual void calcParams2Norm(float* sumSquares, Problem::Ptr problem);
+        virtual void calcParams2Norm(float* params2Norm, Problem::Ptr problem);
 
         // TODO: assert lambda is not 0
         /**

@@ -10,7 +10,7 @@ void ResidualFunction::evaluate() {
 }
 
 void ResidualFunction::computeJacobians(/*float *gradient_*/) {
-    costFunction->computeJacobinas(residualBlock);
+    costFunction->computeJacobians(residualBlock);
 
 //    auto ParamBlocks  = residualBlock->getParameterBlocks();
 //    for (ParameterBlock::Ptr paramBlock : ParamBlocks) {

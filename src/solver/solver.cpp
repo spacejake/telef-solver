@@ -164,7 +164,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                 status = Status::CONVERGENCE;
             } else {
                 // for next iteration, we should recalculate the 2-norm of our best fitted parameters
-                calcParams2Norm(problem);
+                calcParams2Norm(problem->getParams2Norm(), problem);
             }
         }
 

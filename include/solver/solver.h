@@ -170,6 +170,6 @@ namespace telef::solver {
          */
         virtual void updateLambda(float *lambda, float *failFactor, float *predGain, bool goodStep) = 0;
 
-        virtual void calcParams2Norm(Problem::Ptr problem) = 0;
+        virtual void calcParams2Norm(float *params2Norm, Problem::Ptr problem) = 0;
     };
 }

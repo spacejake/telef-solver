@@ -153,18 +153,16 @@ bool GPUSolver::evaluateStep(Problem::Ptr problem, float tolerance) {
 
     //TODO: move to separate function, re-evaluate only when parameters updated.
     //Sum params
-    float param_sumSquares = 0.0f;
-    SOLVER_CUDA_CHECK(cudaMemcpy(&param_sumSquares, problem->getParamSumSquares(), sizeof(float), cudaMemcpyDeviceToHost));
+    float param_2norm = 0.0f;
+    SOLVER_CUDA_CHECK(cudaMemcpy(&param_2norm, problem->getParams2Norm(), sizeof(float), cudaMemcpyDeviceToHost));
 
-    float param_2norm = sqrtf(param_sumSquares);
 
     return delta_2norm <= tolerance * (param_2norm + tolerance);
 }
 
 
-float Solver::calcParams2Norm(float* sumSquares, Problem::Ptr problem) {
-    float param_sumSquares = 0.0f;
-    cudaMemset(&sumSquares, 0, static_cast<float>(1));
+void GPUSolver::calcParams2Norm(float* params2Norm, Problem::Ptr problem) {
+    cudaMemset(&params2Norm, 0, static_cast<float>(1));
 
     auto residualFuncs = problem->getResidualFunctions();
     for(auto resFunc : residualFuncs) {
@@ -172,14 +170,12 @@ float Solver::calcParams2Norm(float* sumSquares, Problem::Ptr problem) {
         for(auto paramBlock : resBlock->getParameterBlocks()){
             if (!paramBlock->isShared()) {
                 // Sum Squared values
-                cuda_sum_squares(sumSquares, paramBlock->getBestParameters(), paramBlock->numParameters());
+                cuda_sum_squares(params2Norm, paramBlock->getBestParameters(), paramBlock->numParameters());
             }
         }
     }
 
-    SOLVER_CUDA_CHECK(cudaMemcpy(&param_sumSquares, problem->getParamSumSquares(), sizeof(float), cudaMemcpyDeviceToHost));
-
-    return
+    cuda_sqrt(params2Norm, 1);
 }
 
 float GPUSolver::computeGainRatio(float *predGain, float error, float newError, float *lambda, float *deltaParams,
@@ -190,25 +186,19 @@ float GPUSolver::computeGainRatio(float *predGain, float error, float newError, 
      */
 
     float actualGain = error - newError;
-    float predictGain = computePredictedGain(predGain, lambda, deltaParams, gradient, nParams);
+    float predictGain = 0;
+    computePredictedGain(predGain, lambda, deltaParams, gradient, nParams);
+
+    SOLVER_CUDA_CHECK(cudaMemcpy(&predictGain, predGain, sizeof(float), cudaMemcpyDeviceToHost));
+
     float gainRatio = actualGain / predictGain;
 
     return gainRatio;
 }
 
-float GPUSolver::computePredictedGain(float *predGain, float *lambda, float *daltaParams, float *gradient, int nParams) {
+void GPUSolver::computePredictedGain(float *predGain, float *lambda, float *daltaParams, float *gradient, int nParams) {
     //predGain = 0.5*delta^T (lambda * delta + -g)
-    /*
-     * VECTORTYPE tmp(h_lm);
-     * tmp *= lambda;
-     * tmp += -g;
-     * tmp.array() *= h_lm.array();
-     * double predGain = tmp.sum();
-     */
-    float predGain_host;
-
-    //TODO: impl gpu kernal
-    return predGain_host;
+    compute_predicted_gain(predGain, lambda, daltaParams, gradient, nParams);
 }
 
 void GPUSolver::initializeLambda(float *lambda, float tauFactor, float *hessian, int nParams) {
