@@ -87,7 +87,7 @@ TEST_F(GPUSolver4Param, MultiParams) {
     // TODO: This is a bad example, fix!!!!
 //    solver->options.max_iterations = 3;
 //    solver->options.step_tolerance = 1e-6;
-    solver->options.step_tolerance = 1e-12;
+    solver->options.step_tolerance = 1e-8;
     solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 
@@ -117,7 +117,7 @@ TEST_F(GPUSolverMultiResidual, MultiObjective) {
 //    solver->options.max_iterations = 500;
 //    solver->options.target_error_change = 1e-6;
     //solver->options.lambda_initial = 1e-1;
-    solver->options.step_tolerance = 1e-12;
+    solver->options.step_tolerance = 1e-8;
     solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 
@@ -148,7 +148,7 @@ TEST_F(GPUSolverMultiResidual, MultiObjectiveShared) {
 //    solver->options.max_iterations = 500;
 //    solver->options.target_error_change = 1e-6;
     //solver->options.lambda_initial = 1e-1;
-    solver->options.step_tolerance = 1e-12;
+    solver->options.step_tolerance = 1e-8;
     solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 

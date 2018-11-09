@@ -150,7 +150,7 @@ bool GPUSolver::evaluateGradient(float *gradient, int nParams, float tolerance) 
 
     SOLVER_CUDA_CHECK(cudaMemcpy(&iNorm_h, gradient + index, sizeof(float), cudaMemcpyDeviceToHost));
     iNorm_h = abs(iNorm_h);
-    printf("norm-inf(gradient[%d]): %.4f \n", index, iNorm_h);
+//    printf("norm-inf(gradient[%d]): %.4f \n", index, iNorm_h);
 
     return iNorm_h <= tolerance;
 }

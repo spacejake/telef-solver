@@ -50,7 +50,7 @@ namespace telef::solver {
             }
 
             // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
-            print_array("computeDerivatives::Gradient::END", getGradient(), numEffectiveParams());
+//            print_array("computeDerivatives::Gradient::END", getGradient(), numEffectiveParams());
 
             // Compute Globa Hessian
             // TODO: write unit tests for global hessian computation

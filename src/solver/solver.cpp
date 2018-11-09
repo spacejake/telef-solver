@@ -2,6 +2,8 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <chrono>
+using Clock=std::chrono::high_resolution_clock;
 
 #include "solver/solver.h"
 
@@ -9,6 +11,12 @@ using namespace std;
 using namespace telef::solver;
 
 Status Solver::solve(Problem::Ptr problem, bool initProblem) {
+    // TODO: define Timing Macros
+    long residual_Ttime = 0;
+    long derivative_Ttime = 0;
+    long solver_Ttime = 0;
+    auto timer_st = Clock::now();
+    auto timer_et = Clock::now();
     auto residualFuncs = problem->getResidualFunctions();
 
     if (residualFuncs.size() == 0) {
@@ -16,16 +24,27 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     }
 
     Status status = Status::RUNNING;
+    auto solve_st = Clock::now();
+
 
     // Initialize
+    auto init_st = Clock::now();
     if (initProblem) {
         problem->initialize();
     }
     initialize_run(problem);
+    auto init_et = Clock::now();
 
     //loop through each cost function, initialize all memory with results from given starting params
+    timer_st = Clock::now();
     problem->evaluate();
+    timer_et = Clock::now();
+    residual_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
+
+    timer_st = Clock::now();
     problem->computeDerivatives();
+    timer_et = Clock::now();
+    derivative_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
 
     float init_error = 0;
     for (auto resFunc : residualFuncs) {
@@ -72,9 +91,13 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                        problem->numEffectiveParams(), prev_good_iteration);
 
         // Solves delta = -(H(x) + lambda * I)^-1 * g(x), x+1 = x + delta
+
+        timer_st = Clock::now();
         bool solveSystemSuccess = solveSystem(problem->getDeltaParameters(), problem->getHessianLowTri(),
                 problem->getHessian(), problem->getGradient(),
                 problem->numEffectiveParams());
+        timer_et = Clock::now();
+        solver_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
 
         // Check if decompsition results in a symmetric positive-definite matrix
         // If the system of equations failed to be evaluated with current step, make another step and try again.
@@ -84,7 +107,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             status = Status::CONVERGENCE;
             // Save parameters?
             good_iteration = false;
-            printf("CONVERGENCE: Cannot compute new delta");
+//            printf("CONVERGENCE: Cannot compute new delta");
         } else if (solveSystemSuccess) {
             // Update Params
             for (auto resFunc : residualFuncs) {
@@ -103,7 +126,10 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             // Evaluate step and new params
             // if prev error was derr <= 0, don't do jacobian recalc
+            timer_st = Clock::now();
             problem->evaluate();
+            timer_et = Clock::now();
+            residual_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
             float problemError = 0;
             for (auto resFunc : residualFuncs) {
                 auto resBlock = resFunc->getResidualBlock();
@@ -114,7 +140,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             //TODO: Add Loss Funciton for each Resdidual Function, 0.5 * Loss(chi-squared-error or bloack error)
             newError += 0.5 * problemError; //Compute Cost: 0.5 * chi-squared-error, as ceres does
-
+            iterDerr = newError - error;
             //printf("BlockError:%.4f\n", blockError);
 
             /* Compute Gain Ratio
@@ -129,7 +155,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                                                problem->getDeltaParameters(), problem->getGradient(),
                                                problem->numEffectiveParams());
 
-            printf("GainRatio:%.4f\n", gainRatio);
+            //printf("GainRatio:%.4f\n", gainRatio);
 
             good_iteration = gainRatio > options.gain_ratio_threashold;
 
@@ -138,7 +164,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             good_iteration = false;
             if (consecutive_invalid_steps >= options.max_num_consecutive_invalid_steps) {
                 status = Status::CONVERGENCE_FAILED;
-                printf("CONVERGENCE_FAILED: Max consecutive bad steps reached");
+//                printf("CONVERGENCE_FAILED: Max consecutive bad steps reached");
             }
 
             consecutive_invalid_steps++;
@@ -160,13 +186,16 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             }
 
             // Recompute derivatives (jacobian, gradients, Hessian) for best found parameters
+            timer_st = Clock::now();
             problem->computeDerivatives();
+            timer_et = Clock::now();
+            derivative_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
 
             //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
             // Convergence achieved?
             if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)) {
                 status = Status::CONVERGENCE;
-                printf("CONVERGENCE: minimum reached");
+//                printf("CONVERGENCE: minimum reached");
             } else {
                 // for next iteration, we should recalculate the 2-norm of our best fitted parameters
                 calcParams2Norm(problem->getParams2Norm(), problem);
@@ -216,7 +245,11 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         }
     }
 
+    auto solve_et = Clock::now();
+
+    auto post_st = Clock::now();
     finalize_result(problem);
+    auto post_et = Clock::now();
 
     if (options.verbose) {
         std::stringstream logmsg;
@@ -229,7 +262,28 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         logmsg << "\tFinal Error:\t"  << error << std::endl;
         logmsg << "\tTotal Change:\t" << error-init_error << std::endl;
 
+        logmsg << std::defaultfloat << std::setprecision(4);
+        logmsg << "\nTime: (in Seconds)" << std::endl;
+        logmsg << "\tPreprocess:\t\t"
+               << std::chrono::duration_cast<std::chrono::nanoseconds>(init_et - init_st).count() * 1e-9
+               << std::endl;
+        logmsg << "\n\tResiduals:\t\t"
+               << residual_Ttime * 1e-9
+               << std::endl;
+        logmsg << "\tDerivatives:\t"
+               << derivative_Ttime * 1e-9
+               << std::endl;
+        logmsg << "\tLinear Solver:\t"
+               << solver_Ttime * 1e-9
+               << std::endl;
+        logmsg << "\n\tPostprocess:\t"
+               << std::chrono::duration_cast<std::chrono::nanoseconds>(post_et - post_st).count() * 1e-9
+               << std::endl;
+        logmsg << "\tTotal:\t\t\t"
+                << std::chrono::duration_cast<std::chrono::nanoseconds>(solve_et - solve_st).count() * 1e-9
+                << std::endl;
         std::cout << std::endl << logmsg.str() << std::endl;
+
     }
 
     if (iter == options.max_iterations) {
