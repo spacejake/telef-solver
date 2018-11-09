@@ -265,10 +265,10 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
         logmsg << std::defaultfloat << std::setprecision(4);
         logmsg << "\nTime: (in Seconds)" << std::endl;
-        logmsg << "\tPreprocess:\t\t"
+        logmsg << "\tPreprocess:\t"
                << std::chrono::duration_cast<std::chrono::nanoseconds>(init_et - init_st).count() * 1e-9
                << std::endl;
-        logmsg << "\n\tResiduals:\t\t"
+        logmsg << "\n\tResiduals:\t"
                << residual_Ttime * 1e-9
                << std::endl;
         logmsg << "\tDerivatives:\t"
@@ -280,7 +280,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         logmsg << "\n\tPostprocess:\t"
                << std::chrono::duration_cast<std::chrono::nanoseconds>(post_et - post_st).count() * 1e-9
                << std::endl;
-        logmsg << "\tTotal:\t\t\t"
+        logmsg << "\tTotal:\t\t"
                 << std::chrono::duration_cast<std::chrono::nanoseconds>(solve_et - solve_st).count() * 1e-9
                 << std::endl;
         std::cout << std::endl << logmsg.str() << std::endl;
