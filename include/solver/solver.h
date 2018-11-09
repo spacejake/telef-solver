@@ -18,7 +18,7 @@ namespace telef::solver {
         // lambda = tau * max(Diag(Initial_Hessian)) as initial Dampening factor,
         // initial_dampening_factor == tau
         // tau = 1e-6 is considard good if initial parameters are good approximations
-        // use 1e-3 or 1 otherwise
+        // use 1e-3 or 1 (Default) otherwise
         // See "Methods For Non-linear Least Square Problems", 2nd edition 2004, Madsen, Nielsen, and Tingleff
         // This implementation is based on the Lavenberg-Marquart method in the paper above.
         float initial_dampening_factor;
@@ -42,13 +42,14 @@ namespace telef::solver {
         Options options;
 
         Solver(){
-            options.initial_dampening_factor = 1e-3; // for good starting parameter guesses use 1e-6.
+            // Decrease for good starting parameter guesses, for really good guesses use 1e-6
+            options.initial_dampening_factor = 1;
 
             options.max_iterations = 500;
             options.max_num_consecutive_invalid_steps = 5;
             options.step_tolerance = 1e-8;
             options.gradient_tolerance = 1e-8;
-            options.gain_ratio_threashold = 0; //Nielsen (1999)
+            options.gain_ratio_threashold = 0; // Nielsen (1999)
 
             options.verbose = false;
         }

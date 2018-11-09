@@ -38,8 +38,7 @@ TEST_F(GPUSolverTestSimple, solve1) {
 }
 
 TEST_F(GPUSolverTest, solve2) {
-//    solver->options.max_iterations = 500;
-//    solver->options.step_tolerance = 1e-6;
+    solver->options.initial_dampening_factor = 1e-3;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -61,7 +60,7 @@ TEST_F(GPUSolverTest, solve2) {
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
     solver->options.max_iterations = 20;
-//    solver->options.step_tolerance = 1e-6;
+    solver->options.initial_dampening_factor = 1e-3;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -85,10 +84,6 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
 TEST_F(GPUSolver4Param, MultiParams) {
     // TODO: This is a bad example, fix!!!!
-//    solver->options.max_iterations = 3;
-//    solver->options.step_tolerance = 1e-6;
-    solver->options.step_tolerance = 1e-8;
-    solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -114,11 +109,6 @@ TEST_F(GPUSolver4Param, MultiParams) {
 }
 
 TEST_F(GPUSolverMultiResidual, MultiObjective) {
-//    solver->options.max_iterations = 500;
-//    solver->options.target_error_change = 1e-6;
-    //solver->options.lambda_initial = 1e-1;
-    solver->options.step_tolerance = 1e-8;
-    solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -145,11 +135,6 @@ TEST_F(GPUSolverMultiResidual, MultiObjectiveShared) {
     resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
             resFunc2->getResidualBlock()->getParameterBlocks()[0]);
 
-//    solver->options.max_iterations = 500;
-//    solver->options.target_error_change = 1e-6;
-    //solver->options.lambda_initial = 1e-1;
-    solver->options.step_tolerance = 1e-8;
-    solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
