@@ -247,7 +247,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     }
 
     PROFILE_END(solver);
-    linSolver_Ttime = PROFILE_GET(solver);
+    solver_Ttime = PROFILE_GET(solver);
 
     auto post_time = PROFILE(
             finalize_result(problem););
