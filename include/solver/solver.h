@@ -44,7 +44,7 @@ namespace telef::solver {
         Solver(){
             options.initial_dampening_factor = 1e-3; // for good starting parameter guesses use 1e-6.
 
-            options.max_iterations = 100;
+            options.max_iterations = 500;
             options.max_num_consecutive_invalid_steps = 5;
             options.step_tolerance = 1e-8;
             options.gradient_tolerance = 1e-8;

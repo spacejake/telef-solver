@@ -47,7 +47,7 @@ TEST_F(GPUSolverTest, solve2) {
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
     //FIXME: Debug mode results in different params {-3.89191, -0.46297}, why?
-    vector<float> real_fit_params = {-2.02289, 0.0536176};
+    vector<float> real_fit_params = {-2.01896, 0.0538367};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -68,8 +68,8 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
-    vector<float> real_fit_params1 = {-0.00919744, 0.39149};
-    vector<float> real_fit_params2 = {1.65098};
+    vector<float> real_fit_params1 = { -0.804031, -1.22526 };
+    vector<float> real_fit_params2 = {1.81251};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -84,9 +84,11 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 }
 
 TEST_F(GPUSolver4Param, MultiParams) {
+    // TODO: This is a bad example, fix!!!!
 //    solver->options.max_iterations = 3;
 //    solver->options.step_tolerance = 1e-6;
     solver->options.step_tolerance = 1e-12;
+    solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -98,9 +100,6 @@ TEST_F(GPUSolver4Param, MultiParams) {
     vector<float> real_fit_params3 = {-1, 1};
     vector<float> real_fit_params4 = {1, 0.5};
 
-    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
-    // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
-//    vector<float> real_fit_params = {-2.60216, 0.0318891};
 
     float ferr = 1e-3;
     EXPECT_THAT(params1,
@@ -113,35 +112,61 @@ TEST_F(GPUSolver4Param, MultiParams) {
                 Pointwise(FloatNear(ferr), real_fit_params4));
 
 }
-//
-//TEST_F(GPUSolverMultiResidual, MultiObjective) {
-////    solver->options.max_iterations = 500;
-////    solver->options.target_error_change = 1e-6;
-//    solver->options.lambda_initial = 1e-1;
-//    solver->options.verbose = true;
-//
-//    Status  status = solver->solve(problem);
-//
-//    EXPECT_TRUE(Status::CONVERGENCE == status);
-//
-//    // TODO: Shared
-////    vector<float> real_fit_params1 = {-2.13354, 2.19602};
-//
-//    // Independant: Our current best LS Error is 59.0, ceres is 22.5
-//    vector<float> real_fit_params1 = {3.42431, -0.879273};
-//    vector<float> real_fit_params2 = {1.56218, 4.09762};
-//
-//    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
-//    // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
-////    vector<float> real_fit_params = {-2.60216, 0.0318891};
-//
-//    float ferr = 1e-3;
-//    EXPECT_THAT(params1,
-//                Pointwise(FloatNear(ferr), real_fit_params1));
-//    EXPECT_THAT(params2,
-//                Pointwise(FloatNear(ferr), real_fit_params2));
-//
-//}
+
+TEST_F(GPUSolverMultiResidual, MultiObjective) {
+//    solver->options.max_iterations = 500;
+//    solver->options.target_error_change = 1e-6;
+    //solver->options.lambda_initial = 1e-1;
+    solver->options.step_tolerance = 1e-12;
+    solver->options.initial_dampening_factor = 1;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    // Independant: Our current best LS Error is 22.5, ceres is 22.5
+    vector<float> real_fit_params1 = {1.57844, 4.01355};
+    vector<float> real_fit_params2 = {1.62091, 0.361981};
+
+    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
+    // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
+//    vector<float> real_fit_params = {-2.60216, 0.0318891};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(params1,
+                Pointwise(FloatNear(ferr), real_fit_params1));
+    EXPECT_THAT(params2,
+                Pointwise(FloatNear(ferr), real_fit_params2));
+
+}
+
+TEST_F(GPUSolverMultiResidual, MultiObjectiveShared) {
+    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
+            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
+
+//    solver->options.max_iterations = 500;
+//    solver->options.target_error_change = 1e-6;
+    //solver->options.lambda_initial = 1e-1;
+    solver->options.step_tolerance = 1e-12;
+    solver->options.initial_dampening_factor = 1;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    // Shared: Our current best LS Error is 22.5, ceres is 22.5
+    vector<float> real_fit_params1 = {4.77069, 0.439377};
+
+
+    float ferr = 1e-3;
+    EXPECT_THAT(params1,
+                Pointwise(FloatNear(ferr), real_fit_params1));
+    EXPECT_THAT(params2,
+                Pointwise(FloatNear(ferr), real_fit_params1));
+
+}
 
 //
 //TEST(GPUSolverTest_cuda, calcError) {

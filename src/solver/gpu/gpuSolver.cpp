@@ -139,8 +139,7 @@ bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const floa
 }
 
 bool GPUSolver::evaluateGradient(float *gradient, int nParams, float tolerance) {
-    // TODO: Sum(gradients)
-    // TODO: Return math::norm_inf(g) <= e_1
+    // Return math::norm_inf(g) <= e_1
     int index = 0;
     float iNorm_h = 0;
 
@@ -157,20 +156,18 @@ bool GPUSolver::evaluateGradient(float *gradient, int nParams, float tolerance) 
 }
 
 bool GPUSolver::evaluateStep(Problem::Ptr problem, float tolerance) {
-    //TODO: 2-norm(deltas) ||h_lm||
-    //TODO: 2-norm(x_params) ||x||
-    //TODO: return ||h_lm|| ≤ ε_2 (||x|| + ε_2)
+    //2-norm(deltas) ||h_lm||
 
     float delta_2norm=0.0f;
     cublasSnrm2_v2(cublasHandle, problem->numEffectiveParams(), problem->getDeltaParameters(), 1, &delta_2norm);
 
-    //TODO: move to separate function, re-evaluate only when parameters updated.
-    //Sum params
+    //2-norm(x_params) ||x||
     float param_2norm = 0.0f;
     SOLVER_CUDA_CHECK(cudaMemcpy(&param_2norm, problem->getParams2Norm(), sizeof(float), cudaMemcpyDeviceToHost));
 
-    printf("delta-2Norm: %.4f param-2Norm: %.4f changeXTol: %.4f\n", delta_2norm, param_2norm, tolerance * (param_2norm + tolerance));
+    //printf("delta-2Norm: %.4f param-2Norm: %.4f changeXTol: %.4f\n", delta_2norm, param_2norm, tolerance * (param_2norm + tolerance));
 
+    //return ||h_lm|| ≤ ε_2 (||x|| + ε_2)
     return delta_2norm <= tolerance * (param_2norm + tolerance);
 }
 

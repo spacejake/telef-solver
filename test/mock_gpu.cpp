@@ -308,11 +308,11 @@ void GPUSolverMultiResidual::SetUp()
     params2 = {0.5,0.5};
     std::vector<float*> initParams2 = {params2.data()};
 
-    ResidualFunction::Ptr resFunc1 = problem->addResidualFunction(cost1, initParams1);
-    ResidualFunction::Ptr resFunc2 = problem->addResidualFunction(cost2, initParams2);
+    resFunc1 = problem->addResidualFunction(cost1, initParams1);
+    resFunc2 = problem->addResidualFunction(cost2, initParams2);
 
-    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
-            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
+    //resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
+    //        resFunc2->getResidualBlock()->getParameterBlocks()[0]);
 
 //    problem->initialize();
 }

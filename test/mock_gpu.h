@@ -142,6 +142,8 @@ public:
     telef::solver::GPUProblem::Ptr problem;
     std::vector<float> params1;
     std::vector<float> params2;
+    telef::solver::ResidualFunction::Ptr resFunc1;
+    telef::solver::ResidualFunction::Ptr resFunc2;
 
     virtual void SetUp();
     virtual void TearDown();

@@ -168,8 +168,9 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
         int diagonal_index = i+nParams*i;
-        // Apply step down diagonal
+        hessians[i+nParams*i] += hessians[i+nParams*i] * lambda[0];
         //hessians[i+nParams*i] += hessians[i+nParams*i] * step[0];
+        /* GPU Fit update code
         if (goodStep)
         {
             hessians[diagonal_index] -= dampeningFactors[i] * lambda[0] / 10.;
@@ -187,6 +188,7 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
         //    scaling_vector[parameter_index] = hessian[diagonal_index];
 
         hessians[diagonal_index] += dampeningFactors[i] * lambda[0];
+         */
 
 //        printf("_update_hessians:hessians[%d][%d]: %.4f\n",i, i, hessians[diagonal_index]);
     }

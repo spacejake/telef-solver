@@ -84,6 +84,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             status = Status::CONVERGENCE;
             // Save parameters?
             good_iteration = false;
+            printf("CONVERGENCE: Cannot compute new delta");
         } else if (solveSystemSuccess) {
             // Update Params
             for (auto resFunc : residualFuncs) {
@@ -137,6 +138,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             good_iteration = false;
             if (consecutive_invalid_steps >= options.max_num_consecutive_invalid_steps) {
                 status = Status::CONVERGENCE_FAILED;
+                printf("CONVERGENCE_FAILED: Max consecutive bad steps reached");
             }
 
             consecutive_invalid_steps++;
@@ -164,6 +166,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             // Convergence achieved?
             if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)) {
                 status = Status::CONVERGENCE;
+                printf("CONVERGENCE: minimum reached");
             } else {
                 // for next iteration, we should recalculate the 2-norm of our best fitted parameters
                 calcParams2Norm(problem->getParams2Norm(), problem);
