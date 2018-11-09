@@ -48,6 +48,7 @@ set( interfaceHdr
         include/solver/residualFunction.h
         include/solver/parameterBlock.h
         include/solver/problem.h
+        include/solver/util/profile.h
 )
 
 set( interfaceSrc

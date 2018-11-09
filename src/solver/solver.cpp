@@ -3,20 +3,26 @@
 #include <iomanip>
 #include <string>
 #include <chrono>
+#include <algorithm>
 using Clock=std::chrono::high_resolution_clock;
 
+#include "solver/util/profile.h"
 #include "solver/solver.h"
 
 using namespace std;
 using namespace telef::solver;
 
+
+
 Status Solver::solve(Problem::Ptr problem, bool initProblem) {
-    // TODO: define Timing Macros
     long residual_Ttime = 0;
     long derivative_Ttime = 0;
+    long linSolver_Ttime = 0;
     long solver_Ttime = 0;
-    auto timer_st = Clock::now();
-    auto timer_et = Clock::now();
+    PROFILE_DECLARE(init);
+    PROFILE_DECLARE(solver);
+    PROFILE_DECLARE(linear_solver);
+
     auto residualFuncs = problem->getResidualFunctions();
 
     if (residualFuncs.size() == 0) {
@@ -24,27 +30,24 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     }
 
     Status status = Status::RUNNING;
-    auto solve_st = Clock::now();
+    PROFILE_START(solver);
 
 
     // Initialize
-    auto init_st = Clock::now();
+    PROFILE_START(init);
     if (initProblem) {
         problem->initialize();
     }
     initialize_run(problem);
-    auto init_et = Clock::now();
+    PROFILE_END(init);
+    auto init_time = PROFILE_GET(init);
 
     //loop through each cost function, initialize all memory with results from given starting params
-    timer_st = Clock::now();
-    problem->evaluate();
-    timer_et = Clock::now();
-    residual_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
+    residual_Ttime += PROFILE(
+            problem->evaluate(););
 
-    timer_st = Clock::now();
-    problem->computeDerivatives();
-    timer_et = Clock::now();
-    derivative_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
+    derivative_Ttime += PROFILE(
+            problem->computeDerivatives(););
 
     float init_error = 0;
     for (auto resFunc : residualFuncs) {
@@ -92,12 +95,12 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
         // Solves delta = -(H(x) + lambda * I)^-1 * g(x), x+1 = x + delta
 
-        timer_st = Clock::now();
+        PROFILE_START(linear_solver);
         bool solveSystemSuccess = solveSystem(problem->getDeltaParameters(), problem->getHessianLowTri(),
                 problem->getHessian(), problem->getGradient(),
                 problem->numEffectiveParams());
-        timer_et = Clock::now();
-        solver_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
+        PROFILE_END(linear_solver);
+        linSolver_Ttime += PROFILE_GET(linear_solver);
 
         // Check if decompsition results in a symmetric positive-definite matrix
         // If the system of equations failed to be evaluated with current step, make another step and try again.
@@ -126,10 +129,9 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             // Evaluate step and new params
             // if prev error was derr <= 0, don't do jacobian recalc
-            timer_st = Clock::now();
-            problem->evaluate();
-            timer_et = Clock::now();
-            residual_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
+            residual_Ttime += PROFILE(
+                    problem->evaluate(););
+
             float problemError = 0;
             for (auto resFunc : residualFuncs) {
                 auto resBlock = resFunc->getResidualBlock();
@@ -187,10 +189,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             }
 
             // Recompute derivatives (jacobian, gradients, Hessian) for best found parameters
-            timer_st = Clock::now();
-            problem->computeDerivatives();
-            timer_et = Clock::now();
-            derivative_Ttime += std::chrono::duration_cast<std::chrono::nanoseconds>(timer_et - timer_st).count();
+            derivative_Ttime += PROFILE(
+                    problem->computeDerivatives(););
 
             //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
             // Convergence achieved?
@@ -246,11 +246,11 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         }
     }
 
-    auto solve_et = Clock::now();
+    PROFILE_END(solver);
+    linSolver_Ttime = PROFILE_GET(solver);
 
-    auto post_st = Clock::now();
-    finalize_result(problem);
-    auto post_et = Clock::now();
+    auto post_time = PROFILE(
+            finalize_result(problem););
 
     if (options.verbose) {
         std::stringstream logmsg;
@@ -265,8 +265,9 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
         logmsg << std::defaultfloat << std::setprecision(4);
         logmsg << "\nTime: (in Seconds)" << std::endl;
+        // Convert ns to seconds
         logmsg << "\tPreprocess:\t"
-               << std::chrono::duration_cast<std::chrono::nanoseconds>(init_et - init_st).count() * 1e-9
+               << init_time * 1e-9
                << std::endl;
         logmsg << "\n\tResiduals:\t"
                << residual_Ttime * 1e-9
@@ -275,13 +276,13 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                << derivative_Ttime * 1e-9
                << std::endl;
         logmsg << "\tLinear Solver:\t"
-               << solver_Ttime * 1e-9
+               << linSolver_Ttime * 1e-9
                << std::endl;
         logmsg << "\n\tPostprocess:\t"
-               << std::chrono::duration_cast<std::chrono::nanoseconds>(post_et - post_st).count() * 1e-9
+               << post_time * 1e-9
                << std::endl;
         logmsg << "\tTotal:\t\t"
-                << std::chrono::duration_cast<std::chrono::nanoseconds>(solve_et - solve_st).count() * 1e-9
+                << solver_Ttime * 1e-9
                 << std::endl;
         std::cout << std::endl << logmsg.str() << std::endl;
 
