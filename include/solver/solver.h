@@ -28,7 +28,7 @@ namespace telef::solver {
         // Termination targets
         int max_iterations;
         int max_num_consecutive_invalid_steps;
-        float error_change_tolerance;
+        float step_tolerance;
         float gradient_tolerance;
 
         bool verbose;
@@ -46,7 +46,7 @@ namespace telef::solver {
 
             options.max_iterations = 100;
             options.max_num_consecutive_invalid_steps = 5;
-            options.error_change_tolerance = 1e-8;
+            options.step_tolerance = 1e-8;
             options.gradient_tolerance = 1e-8;
             options.gain_ratio_threashold = 0; //Nielsen (1999)
 

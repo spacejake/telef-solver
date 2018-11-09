@@ -34,6 +34,13 @@ void GPUSolver::initialize_run(Problem::Ptr problem) {
 
     //Initialize Total Error
     SOLVER_CUDA_CHECK(cudaMemset(problem->getWorkingError(), 0, sizeof(float)));
+    SOLVER_CUDA_CHECK(cudaMemset(problem->getPredictedGain(), 0, sizeof(float)));
+    SOLVER_CUDA_CHECK(cudaMemset(problem->getParams2Norm(), 0, sizeof(float)));
+
+    float initLambda = 1e-1;
+    float initFailFactor = 2;
+    SOLVER_CUDA_CHECK(cudaMemcpy(problem->getLambda(), &initLambda, sizeof(float), cudaMemcpyHostToDevice));
+    SOLVER_CUDA_CHECK(cudaMemcpy(problem->getFailFactor(), &initFailFactor, sizeof(float), cudaMemcpyHostToDevice));
 
     // Initialize Dampening Factors
     float* dampeningFactors = problem->getDampeningFactors();
@@ -138,7 +145,13 @@ bool GPUSolver::evaluateGradient(float *gradient, int nParams, float tolerance) 
     float iNorm_h = 0;
 
     cublasIsamax_v2(cublasHandle, nParams, gradient, 1, &index);
+
+    // Fortran 1-based indexing, covert to 0-based index
+    index -= 1;
+
     SOLVER_CUDA_CHECK(cudaMemcpy(&iNorm_h, gradient + index, sizeof(float), cudaMemcpyDeviceToHost));
+    iNorm_h = abs(iNorm_h);
+    printf("norm-inf(gradient[%d]): %.4f \n", index, iNorm_h);
 
     return iNorm_h <= tolerance;
 }
@@ -156,6 +169,7 @@ bool GPUSolver::evaluateStep(Problem::Ptr problem, float tolerance) {
     float param_2norm = 0.0f;
     SOLVER_CUDA_CHECK(cudaMemcpy(&param_2norm, problem->getParams2Norm(), sizeof(float), cudaMemcpyDeviceToHost));
 
+    printf("delta-2Norm: %.4f param-2Norm: %.4f changeXTol: %.4f\n", delta_2norm, param_2norm, tolerance * (param_2norm + tolerance));
 
     return delta_2norm <= tolerance * (param_2norm + tolerance);
 }

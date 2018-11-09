@@ -39,7 +39,7 @@ TEST_F(GPUSolverTestSimple, solve1) {
 
 TEST_F(GPUSolverTest, solve2) {
 //    solver->options.max_iterations = 500;
-//    solver->options.error_change_tolerance = 1e-6;
+//    solver->options.step_tolerance = 1e-6;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -47,7 +47,7 @@ TEST_F(GPUSolverTest, solve2) {
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
     //FIXME: Debug mode results in different params {-3.89191, -0.46297}, why?
-    vector<float> real_fit_params = {-3.91337, -0.462813};
+    vector<float> real_fit_params = {-2.02289, 0.0536176};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -61,15 +61,15 @@ TEST_F(GPUSolverTest, solve2) {
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
     solver->options.max_iterations = 20;
-//    solver->options.error_change_tolerance = 1e-6;
+//    solver->options.step_tolerance = 1e-6;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
-    vector<float> real_fit_params1 = {-1.00897, 0.044994};
-    vector<float> real_fit_params2 = {1.52608};
+    vector<float> real_fit_params1 = {-0.00919744, 0.39149};
+    vector<float> real_fit_params2 = {1.65098};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -85,7 +85,8 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
 TEST_F(GPUSolver4Param, MultiParams) {
 //    solver->options.max_iterations = 3;
-//    solver->options.error_change_tolerance = 1e-6;
+//    solver->options.step_tolerance = 1e-6;
+    solver->options.step_tolerance = 1e-12;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);

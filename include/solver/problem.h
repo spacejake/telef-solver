@@ -44,12 +44,13 @@ namespace telef::solver {
                     calcGradients(getGradient()+paramBlock->getOffset(),
                                   paramBlock->getJacobians(), residualBlock->getResiduals(),
                                   residualBlock->numResiduals(), paramBlock->numParameters());
+                    print_array("computeDerivatives::Gradient", getGradient(), numEffectiveParams());
 
                 }
             }
 
             // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
-//            print_array("calculateHessianBlock::Gradient", getGradient(), numEffectiveParams());
+            print_array("computeDerivatives::Gradient::END", getGradient(), numEffectiveParams());
 
             // Compute Globa Hessian
             // TODO: write unit tests for global hessian computation

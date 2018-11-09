@@ -80,7 +80,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         // If the system of equations failed to be evaluated with current step, make another step and try again.
 
         // convergence reached if ||h_lm|| ≤ ε_2 (||x|| + ε_2)
-        if( solveSystemSuccess && evaluateStep(problem, options.error_change_tolerance) ) {
+        if( solveSystemSuccess && evaluateStep(problem, options.step_tolerance) ) {
             status = Status::CONVERGENCE;
             // Save parameters?
             good_iteration = false;
@@ -127,6 +127,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                                                error, newError, problem->getLambda(),
                                                problem->getDeltaParameters(), problem->getGradient(),
                                                problem->numEffectiveParams());
+
+            printf("GainRatio:%.4f\n", gainRatio);
 
             good_iteration = gainRatio > options.gain_ratio_threashold;
 
