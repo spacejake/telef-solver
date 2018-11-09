@@ -167,6 +167,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 //                printf("CONVERGENCE_FAILED: Max consecutive bad steps reached");
             }
 
+            iterDerr = 0.0f;
             consecutive_invalid_steps++;
         }
 
