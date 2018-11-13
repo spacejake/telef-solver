@@ -12,9 +12,10 @@
 
 #include "solver/gpu/cuda/cu_solver.h"
 
-//#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 
 //using namespace telef::solver::utils;
+
 
 using Clock=std::chrono::high_resolution_clock;
 
@@ -54,6 +55,7 @@ void print_array(const char* msg, const float *arr_d, const int n) {
 
     printf("%s:\n", msg);
     _print_arr << < dimGrid, dimBlock >> > (arr_d, n);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
     printf("\n");
 }
@@ -138,6 +140,7 @@ void calc_error(float* error, const float* residuals, const int nRes){
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _sum_squares << < dimGrid, dimBlock >> >(error, residuals, nRes);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -157,6 +160,7 @@ void _cuda_lambda_update(float *lambda, float *failFactor, const float *gainRati
 
 void cuda_lambda_update(float *lambda, float *failFactor, const float *gainRatio, const bool goodStep) {
     _cuda_lambda_update << < 1, 1 >> >(lambda, failFactor, gainRatio, goodStep);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -168,7 +172,7 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
         int diagonal_index = i+nParams*i;
-        hessians[i+nParams*i] += hessians[i+nParams*i] * lambda[0];
+        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0];
 
         /* GPU Fit update code
         if (goodStep)
@@ -199,6 +203,7 @@ void update_hessians(float *hessians, float *dampeningFactors, float *lambda, in
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _update_hessians << < dimGrid, dimBlock >> >(hessians, dampeningFactors, lambda, nParams, goodStep);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 //    print_array("update_hessians:New Hessian",hessians, nParams*nParams);
 
@@ -222,6 +227,7 @@ void update_parameters(float* newParams, const float* params, const float* newDe
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
     //print_array("New Params", newParams, nParams);
 }
@@ -243,7 +249,7 @@ void initializeSolverBuffer(cusolverDnHandle_t solver_handle,
     // Should not happen, if it does bad stuff man...
     assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
 
-    cudaMalloc((void**)solverBuffer, solverBufferSize * sizeof(float));
+    SOLVER_CUDA_CHECK(cudaMalloc((void**)solverBuffer, solverBufferSize * sizeof(float)));
 }
 
 /**
@@ -267,7 +273,7 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
 
     int *info_d = NULL; // info in gpu (device copy)
 //    CUDA_MALLOC(&info_d, static_cast<size_t>(1));
-    cudaMalloc((void**)&info_d, sizeof(int));
+    SOLVER_CUDA_CHECK(cudaMalloc((void**)&info_d, sizeof(int)));
 
     // Allocate working space for decomposition
     // TODO: Try Lazily initialize allocate working space once in parameterBlock, or every-time hessian is computed
@@ -300,7 +306,7 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
 
     int info_h;
 //    CUDA_CHECK(cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost));
-    cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost);
+    SOLVER_CUDA_CHECK(cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost));
 
     if ( 0 != info_h ){
         fprintf(stderr, "Error: Cholesky factorization failed\n");
@@ -318,8 +324,8 @@ bool decompose_cholesky(cusolverDnHandle_t solver_handle, float* matA, const int
 //              << " nanoseconds" << std::endl;
 
     // free resources
-    if (info_d) cudaFree(info_d);
-    if (buffer_d ) cudaFree(buffer_d);
+    if (info_d) SOLVER_CUDA_CHECK(cudaFree(info_d));
+    if (buffer_d ) SOLVER_CUDA_CHECK(cudaFree(buffer_d));
 
     return decomp_status;
 }
@@ -333,7 +339,7 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
 
     int *info_d = NULL; // info in gpu (device copy)
 //    CUDA_MALLOC(&info_d, static_cast<size_t>(1));
-    cudaMalloc((void**)&info_d, sizeof(int));
+    SOLVER_CUDA_CHECK(cudaMalloc((void**)&info_d, sizeof(int)));
 
     cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 
@@ -349,7 +355,7 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
 
     int info_h;
 //    CUDA_CHECK(cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost));
-    cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost);
+    SOLVER_CUDA_CHECK(cudaMemcpy(&info_h, info_d, sizeof(int), cudaMemcpyDeviceToHost));
 
     if ( 0 != info_h ){
         fprintf(stderr, "Error: Cholesky Solver failed\n");
@@ -359,7 +365,7 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
     }
 
     // free resources
-    if (info_d) cudaFree(info_d);
+    if (info_d) SOLVER_CUDA_CHECK(cudaFree(info_d));
 }
 
 __global__
@@ -409,10 +415,11 @@ void initialize_lambda(float *lambda, float tauFactor, float *hessian, int nPara
 
     // AtomicMax only works for integres, here we covert lambda into a float.
     _convertTo << <1,1>> >(lambda, lamda_int);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
     //print_array("New Params", newParams, nParams);
 
-    cudaFree(lamda_int);
+    SOLVER_CUDA_CHECK(cudaFree(lamda_int));
 }
 
 
@@ -428,6 +435,7 @@ void cuda_sum_squares(float* sumSquares, const float* vector, const int nRes){
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _sum_squares << < dimGrid, dimBlock >> >(sumSquares, vector, nRes);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 __global__
@@ -447,6 +455,7 @@ void cuda_sqrt(float* vector, int n){
     dim3 dimGrid((n + blockSize - 1) / blockSize);
 
     _cuda_sqrt << < dimGrid, dimBlock >> >(vector, n);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -476,5 +485,6 @@ void compute_predicted_gain(float* predGain, float *lambda, float *daltaParams, 
     dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _compute_predicted_gain << < dimGrid, dimBlock >> >(predGain, lambda, daltaParams, gradient, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }

@@ -18,10 +18,8 @@ namespace telef::solver {
         virtual ~GPUParameterBlock(){
             if (parameters) SOLVER_CUDA_FREE(parameters);
             if (bestParameters) SOLVER_CUDA_FREE(bestParameters);
-
-
-            SOLVER_CUDA_FREE(jacobians);
-            SOLVER_CUDA_FREE(gradients);
+            if (jacobians) SOLVER_CUDA_FREE(jacobians);
+            if (gradients) SOLVER_CUDA_FREE(gradients);
         }
 
 

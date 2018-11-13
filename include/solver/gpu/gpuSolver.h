@@ -24,16 +24,11 @@ namespace telef::solver {
         }
 
         virtual ~GPUSolver(){
-            cudaFree(down_factor_d);
-            cudaFree(up_factor_d);
-
             cusolverDnDestroy(solver_handle);
             cublasDestroy_v2(cublasHandle);
         }
 
     protected:
-        float *down_factor_d;
-        float *up_factor_d;
         cusolverDnHandle_t solver_handle;
         cublasHandle_t cublasHandle;
 
@@ -112,8 +107,6 @@ namespace telef::solver {
         }
 
         void initDeviceMemory(){
-            SOLVER_CUDA_ALLOC_AND_ZERO(&down_factor_d, static_cast<size_t>(1));
-            SOLVER_CUDA_ALLOC_AND_ZERO(&up_factor_d, static_cast<size_t>(1));
         }
 
     };

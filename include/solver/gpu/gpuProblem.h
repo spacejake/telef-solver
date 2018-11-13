@@ -20,16 +20,16 @@ namespace telef::solver {
         }
 
         virtual ~GPUProblem() {
-            cudaFree(workingError);
-            cudaFree(lambda);
-            cudaFree(failFactor);
-            cudaFree(predictedGain);
-            cudaFree(parameters2norm);
-            cudaFree(deltaParams);
-            cudaFree(dampeningFactors);
-            cudaFree(gradients);
-            cudaFree(hessian);
-            cudaFree(hessianLowTri);
+            SOLVER_CUDA_FREE(workingError);
+            SOLVER_CUDA_FREE(lambda);
+            SOLVER_CUDA_FREE(failFactor);
+            SOLVER_CUDA_FREE(predictedGain);
+            SOLVER_CUDA_FREE(parameters2norm);
+            SOLVER_CUDA_FREE(deltaParams);
+            SOLVER_CUDA_FREE(dampeningFactors);
+            SOLVER_CUDA_FREE(gradients);
+            SOLVER_CUDA_FREE(hessian);
+            SOLVER_CUDA_FREE(hessianLowTri);
         }
 
         void setCublasHandle(cublasHandle_t cublasHandle_){

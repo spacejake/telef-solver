@@ -14,10 +14,10 @@ float GPUSolver::calcError(float *error, const float *residuals, const int nRes)
     // TODO: Use Residual based error, use error_d as total error for all residuals
     float error_h = 0;
     //Reset to 0
-    cudaMemset(error,0, sizeof(float));
+    SOLVER_CUDA_CHECK(cudaMemset(error,0, sizeof(float)));
     calc_error(error, residuals, nRes);
 
-    cudaMemcpy(&error_h, error, sizeof(float), cudaMemcpyDeviceToHost);
+    SOLVER_CUDA_CHECK(cudaMemcpy(&error_h, error, sizeof(float), cudaMemcpyDeviceToHost));
     return error_h;
 }
 
@@ -173,7 +173,7 @@ bool GPUSolver::evaluateStep(Problem::Ptr problem, float tolerance) {
 
 
 void GPUSolver::calcParams2Norm(float* params2Norm, Problem::Ptr problem) {
-    cudaMemset(&params2Norm, 0, static_cast<float>(1));
+    SOLVER_CUDA_CHECK(cudaMemset(params2Norm, 0, sizeof(float)));
 
     auto residualFuncs = problem->getResidualFunctions();
     for(auto resFunc : residualFuncs) {

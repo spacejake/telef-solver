@@ -12,6 +12,7 @@
 #include <cublas_v2.h>
 
 #include "cuda_kernel.h"
+#include "solver/util/cudautil.h"
 
 
 #define BLOCKSIZE 128
@@ -36,6 +37,7 @@ void print_array(float *arr_d, int n) {
 
     printf("Start\n");
     _print_array << < dimGrid, dimBlock >> > (arr_d, n);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
     printf("End\n");
 }
@@ -63,6 +65,7 @@ void calc_resSimple(float *residuals, const float *params, const float *measurem
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_resSimple << < dimGrid, dimBlock >> > (residuals, params, measurements, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -87,6 +90,7 @@ void calc_jacobiSimple(float *jacobians, const float *params, const int nRes, co
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_jacobiSimple << < dimGrid, dimBlock >> > (jacobians, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -115,6 +119,7 @@ void calc_resSimple2(float *residuals, const float *params, const float *measure
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_resSimple2 << < dimGrid, dimBlock >> > (residuals, params, measurements, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -142,6 +147,7 @@ void calc_jacobiSimple2(float *jacobians, const float *params, const int nRes, c
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_jacobiSimple2 << < dimGrid, dimBlock >> > (jacobians, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -170,6 +176,7 @@ void calc_res0(float *residuals, const float *params, const float *measurements,
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_res0 << < dimGrid, dimBlock >> > (residuals, params, measurements, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -206,6 +213,7 @@ void calc_jacobi0(float *jacobians, const float *params, const int nRes, const i
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_jacobi0 << < dimGrid, dimBlock >> > (jacobians, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -233,6 +241,7 @@ void calc_res2Params(float *residuals, const float *params1, const float *params
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_res2Params << < dimGrid, dimBlock >> > (residuals, params1, params2, measurements, nRes, nParams1, nParams2);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -250,7 +259,7 @@ void _calc_jacobi2Params(float *jacobians, float *jacobians2, const float *param
 
     float c = params2[0];
     float c2 = c*c;
-    float c3 = c2*c;
+//    float c3 = c2*c;
 
     // Final Cost = 61.0
 //    float da = 6*a*sin(7*b) + c3;
@@ -277,6 +286,7 @@ void calc_jacobi2Params(float *jacobians, float *jacobians2, const float *params
     dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
 
     _calc_jacobi2Params << < dimGrid, dimBlock >> > (jacobians, jacobians2, params1, params2, nRes, nParams1, nParams2);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -319,6 +329,7 @@ void calc_res4Params(float *residuals,
             params1, params2, params3, params4,
             measurements, nRes,
             nParams1, nParams2, nParams3, nParams4);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
 
@@ -337,7 +348,7 @@ void _calc_jacobi4Params(float *jacobians1, float *jacobians2, float *jacobians3
 
     float c = params2[0];
     float c2 = c*c;
-    float c3 = c2*c;
+//    float c3 = c2*c;
 
     float d1 = params3[0];
     float d2 = params3[1];
@@ -381,5 +392,6 @@ void calc_jacobi4Params(float *jacobians1, float *jacobians2, float *jacobians3,
             params1, params2, params3, params4,
             nRes,
             nParams1, nParams2, nParams3, nParams4);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }

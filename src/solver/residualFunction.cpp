@@ -6,6 +6,11 @@
 using namespace telef::solver;
 
 void ResidualFunction::evaluate() {
+//    int idx = 0;
+//    for (auto param : residualBlock->getParameterBlocks()) {
+//        printf("B4:param[%d]\n", idx++);
+//        print_array("\tB4", param->getParameters(), param->numParameters());
+//    }
     costFunction->evaluate(residualBlock);
 }
 
