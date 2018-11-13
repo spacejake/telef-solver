@@ -12,8 +12,8 @@ class TestCostFunctionSimple : public telef::solver::CostFunction {
 public:
     TestCostFunctionSimple(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestCostFunctionSimple();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock) const;
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) const;
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:
     float* measurements_d;
 };
@@ -23,8 +23,8 @@ class TestCostFunctionSimple2 : public telef::solver::CostFunction {
 public:
     TestCostFunctionSimple2(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestCostFunctionSimple2();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock) const;
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) const;
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:
     float* measurements_d;
 };
@@ -34,8 +34,8 @@ class TestCostFunction : public telef::solver::CostFunction {
 public:
     TestCostFunction(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestCostFunction();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock) const;
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) const;
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:
     float* measurements_d;
 };
@@ -44,8 +44,8 @@ class TestMultiParamCostFunction : public telef::solver::CostFunction {
 public:
     TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_);
     virtual ~TestMultiParamCostFunction();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock) const;
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) const;
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:
     float* measurements_d;
 };
@@ -54,8 +54,8 @@ class Test4ParamCostFunction : public telef::solver::CostFunction {
 public:
     Test4ParamCostFunction(int nRes, const std::vector<int>& paramSizes_);
     virtual ~Test4ParamCostFunction();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock) const;
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) const;
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:
     float* measurements_d;
 };
