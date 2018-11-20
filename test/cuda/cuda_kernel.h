@@ -64,6 +64,20 @@ void _beales_jacobi(float *jacobians, const float *params, const int nRes, const
 void beales_jacobi(float *jacobians, const float *params, const int nRes, const int nParams);
 // End Beales
 
+// Start schwefel_
+__global__
+void _schwefel_res(float *residuals, const float *params, const int nRes, const int nParams);
+
+void schwefel_res(float *residuals, const float *params, const int nRes, const int nParams);
+
+
+
+__global__
+void _schwefel_jacobi(float *jacobians, const float *params, const int nRes, const int nParams);
+
+void schwefel_jacobi(float *jacobians, const float *params, const int nRes, const int nParams);
+// End schwefel_
+
 __global__
 void _calc_res2Params(float *residuals, const float *params1, const float *params2, const float *measurements,
                       const int nRes, const int nParams1, const int nParams2);

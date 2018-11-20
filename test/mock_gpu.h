@@ -50,6 +50,17 @@ private:
     //float* measurements_d;
 };
 
+
+class SchwefelCostFunction : public telef::solver::CostFunction {
+public:
+    SchwefelCostFunction(int nRes, const std::vector<int>& paramSizes_);
+    virtual ~SchwefelCostFunction();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+private:
+    //float* measurements_d;
+};
+
 class TestMultiParamCostFunction : public telef::solver::CostFunction {
 public:
     TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_);
@@ -122,6 +133,20 @@ public:
     telef::solver::GPUSolver::Ptr solver;
     telef::solver::GPUProblem::Ptr problem;
     std::vector<float> params;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+// A new one of these is created for each test
+class SchwefelTest : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
+    std::vector<float> params;
+    int n;
 
     virtual void SetUp();
     virtual void TearDown();

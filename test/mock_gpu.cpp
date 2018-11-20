@@ -98,6 +98,28 @@ void BealesCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr resi
 }
 //BealesCostFunction END
 
+//SchwefelCostFunction START
+SchwefelCostFunction::SchwefelCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
+    //float measurements[] = {1.5,2.25,2.625};
+    //SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+}
+
+SchwefelCostFunction::~SchwefelCostFunction(){
+    //SOLVER_CUDA_FREE(measurements_d);
+}
+
+void SchwefelCostFunction::evaluate(ResidualBlock::Ptr residualBlock) {
+    ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
+    schwefel_res(residualBlock->getResiduals(), params->getParameters(), residualBlock->numResiduals(), params->numParameters());
+}
+
+void SchwefelCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) {
+    ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
+    schwefel_jacobi(params->getJacobians(), params->getParameters(),
+                  residualBlock->numResiduals(), params->numParameters());
+}
+//BealesCostFunction END
+
 //TestMultiParamCostFunction START
 TestMultiParamCostFunction::TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10,3,4,1};
@@ -272,13 +294,35 @@ void BealesTest::SetUp()
     int nRes = 3;
     auto cost = std::make_shared<BealesCostFunction>(nRes, nParams);
 
-    params = {1, 1};
+    params = {4, 1};
     std::vector<float*> initParams = {params.data()};
 
     auto resFunc = problem->addResidualFunction(cost, initParams);
 }
 
 void BealesTest::TearDown() {
+}
+
+//BaelesTest END
+
+//BaelesTest START
+void SchwefelTest::SetUp()
+{
+    solver = std::make_shared<GPUSolver>();
+    problem = std::make_shared<GPUProblem>();
+    n = 5000;
+
+    std::vector<int> nParams = {n};
+    int nRes = n;
+    auto cost = std::make_shared<SchwefelCostFunction>(nRes, nParams);
+
+    params = std::vector<float>(n, 0.f);
+    std::vector<float*> initParams = {params.data()};
+
+    auto resFunc = problem->addResidualFunction(cost, initParams);
+}
+
+void SchwefelTest::TearDown() {
 }
 
 //BaelesTest END

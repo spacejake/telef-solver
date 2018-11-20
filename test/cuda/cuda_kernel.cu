@@ -240,8 +240,8 @@ void beales_res(float *residuals, const float *params,
     _beales_res << < 1, 1 >> > (residuals, params, nRes, nParams);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
-    printf("residuals:\n");
-    print_array(residuals, nRes);
+    //printf("residuals:\n");
+    //print_array(residuals, nRes);
 }
 
 __global__
@@ -271,10 +271,66 @@ void beales_jacobi(float *jacobians, const float *params, const int nRes, const 
     _beales_jacobi << < 1, 1 >> > (jacobians, params, nRes, nParams);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
-    printf("jacobians:\n");
-    print_array(jacobians, nRes*nParams);
+    //printf("jacobians:\n");
+    //print_array(jacobians, nRes*nParams);
 }
 /************************************************************/
+
+/**************Generalized Schwefel's Function No. 2.26**************************/
+
+__global__
+void _schwefel_res(float *residuals, const float *params,
+                 const int nRes, const int nParams) {
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    const float y = -418.98288727 * nParams;
+
+    // grid-striding loop
+    for (int i = start_index; i < nRes; i += stride) {
+        float fi = -1.f * params[i] * sin( sqrt(params[i]) );
+        residuals[i] = y - fi;
+    }
+}
+
+void schwefel_res(float *residuals, const float *params,
+                const int nRes, const int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _schwefel_res << < dimBlock, dimGrid >> > (residuals, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
+    cudaDeviceSynchronize();
+    //printf("residuals:\n");
+    //print_array(residuals, nRes);
+}
+
+__global__
+void _schwefel_jacobi(float *jacobians, const float *params, const int nRes, const int nParams) {
+    // TODO: document column order for jacobians, perhaps give option to switch between.
+    // Must Compute Jacobians in Column order!!!!, Due to cublas dependancy
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    for (int i = start_index; i < nRes; i += stride) {
+        // residuals cumputed are f(x) - y, dx = f'(x), y is measurement
+        float x_sqrt = sqrt(params[i]);
+        jacobians[nRes*0+i] = sin( x_sqrt ) + 0.5f * x_sqrt * cos(x_sqrt);
+    }
+}
+
+void schwefel_jacobi(float *jacobians, const float *params, const int nRes, const int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _schwefel_jacobi << < dimBlock, dimGrid >> > (jacobians, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
+    cudaDeviceSynchronize();
+    //printf("jacobians:\n");
+    //print_array(jacobians, nRes*nParams);
+}
+/************************************************************/
+
 __global__
 void _calc_res2Params(float *residuals, const float *params1, const float *params2, const float *measurements,
                 const int nRes, const int nParams1, const int nParams2) {

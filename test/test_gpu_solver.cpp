@@ -66,11 +66,27 @@ TEST_F(BealesTest, solve2) {
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
-    vector<float> real_fit_params = {3.025, 0.474};
+    vector<float> real_fit_params = {3, 0.5};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
 //    vector<float> real_fit_params = {-2.60216, 0.0318891};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(params,
+                Pointwise(FloatNear(ferr), real_fit_params));
+
+}
+
+TEST_F(SchwefelTest, solve2) {
+    solver->options.initial_dampening_factor = 1;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    vector<float> real_fit_params(n, 420.968746f);
 
     float ferr = 1e-3;
     EXPECT_THAT(params,
