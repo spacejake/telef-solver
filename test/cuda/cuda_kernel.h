@@ -50,6 +50,19 @@ void _calc_jacobi0(float *jacobians, const float *params, const int nRes, const 
 
 void calc_jacobi0(float *jacobians, const float *params, const int nRes, const int nParams);
 
+// Start Beales
+__global__
+void _beales_res(float *residuals, const float *params, const int nRes, const int nParams);
+
+void beales_res(float *residuals, const float *params, const int nRes, const int nParams);
+
+
+
+__global__
+void _beales_jacobi(float *jacobians, const float *params, const int nRes, const int nParams);
+
+void beales_jacobi(float *jacobians, const float *params, const int nRes, const int nParams);
+// End Beales
 
 __global__
 void _calc_res2Params(float *residuals, const float *params1, const float *params2, const float *measurements,

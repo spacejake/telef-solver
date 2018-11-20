@@ -217,6 +217,64 @@ void calc_jacobi0(float *jacobians, const float *params, const int nRes, const i
     cudaDeviceSynchronize();
 }
 
+/**************BEALE's Function**************************/
+
+__global__
+void _beales_res(float *residuals, const float *params,
+                const int nRes, const int nParams) {
+//    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+//    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    const float x1 = params[0];
+    const float x2 = params[1];
+    residuals[0] = 1.5 - x1 * (1.0 - x2);
+    residuals[1] = 2.25 - x1 * (1.0 - x2 * x2);
+    residuals[2] = 2.625 - x1 * (1.0 - x2 * x2 * x2);
+}
+
+void beales_res(float *residuals, const float *params,
+               const int nRes, const int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _beales_res << < 1, 1 >> > (residuals, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
+    cudaDeviceSynchronize();
+    printf("residuals:\n");
+    print_array(residuals, nRes);
+}
+
+__global__
+void _beales_jacobi(float *jacobians, const float *params, const int nRes, const int nParams) {
+    // TODO: document column order for jacobians, perhaps give option to switch between.
+    // Must Compute Jacobians in Column order!!!!, Due to cublas dependancy
+//    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+//    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    const float x1 = params[0];
+    const float x2 = params[1];
+
+
+    jacobians[nRes*0+0] = x2 - 1.0;
+    jacobians[nRes*0+1] = x2 * x2 - 1.0;
+    jacobians[nRes*0+2] = x2 * x2 * x2 - 1.0;
+
+    jacobians[nRes*1+0] = x1;
+    jacobians[nRes*1+1] = 2 * x1 * x2;
+    jacobians[nRes*1+2] = 3 * x1 * x2 * x2;
+}
+
+void beales_jacobi(float *jacobians, const float *params, const int nRes, const int nParams) {
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nRes + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _beales_jacobi << < 1, 1 >> > (jacobians, params, nRes, nParams);
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
+    cudaDeviceSynchronize();
+    printf("jacobians:\n");
+    print_array(jacobians, nRes*nParams);
+}
+/************************************************************/
 __global__
 void _calc_res2Params(float *residuals, const float *params1, const float *params2, const float *measurements,
                 const int nRes, const int nParams1, const int nParams2) {
