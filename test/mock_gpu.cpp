@@ -76,6 +76,28 @@ void TestCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr residu
 }
 //TestCostFunction END
 
+//BealesCostFunction START
+BealesCostFunction::BealesCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
+    //float measurements[] = {1.5,2.25,2.625};
+    //SOLVER_CUDA_ALLOC_AND_COPY(&measurements_d, measurements, static_cast<size_t >(4));
+}
+
+BealesCostFunction::~BealesCostFunction(){
+    //SOLVER_CUDA_FREE(measurements_d);
+}
+
+void BealesCostFunction::evaluate(ResidualBlock::Ptr residualBlock) {
+    ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
+    beales_res(residualBlock->getResiduals(), params->getParameters(), residualBlock->numResiduals(), params->numParameters());
+}
+
+void BealesCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) {
+    ParameterBlock::Ptr params = residualBlock->getParameterBlocks()[0];
+    beales_jacobi(params->getJacobians(), params->getParameters(),
+                 residualBlock->numResiduals(), params->numParameters());
+}
+//BealesCostFunction END
+
 //TestMultiParamCostFunction START
 TestMultiParamCostFunction::TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
     float measurements[] = {10,3,4,1};
@@ -239,6 +261,27 @@ void GPUSolverTest::TearDown() {
 }
 
 //GPUSolverTest END
+
+//BaelesTest START
+void BealesTest::SetUp()
+{
+    solver = std::make_shared<GPUSolver>();
+    problem = std::make_shared<GPUProblem>();
+
+    std::vector<int> nParams = {2};
+    int nRes = 3;
+    auto cost = std::make_shared<BealesCostFunction>(nRes, nParams);
+
+    params = {1, 1};
+    std::vector<float*> initParams = {params.data()};
+
+    auto resFunc = problem->addResidualFunction(cost, initParams);
+}
+
+void BealesTest::TearDown() {
+}
+
+//BaelesTest END
 
 //GPUSolverMultiParam START
 void GPUSolverMultiParam::SetUp()

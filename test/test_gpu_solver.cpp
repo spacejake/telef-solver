@@ -58,6 +58,26 @@ TEST_F(GPUSolverTest, solve2) {
 
 }
 
+TEST_F(BealesTest, solve2) {
+    solver->options.initial_dampening_factor = 1e-3;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    vector<float> real_fit_params = {3.025, 0.474};
+
+    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
+    // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
+//    vector<float> real_fit_params = {-2.60216, 0.0318891};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(params,
+                Pointwise(FloatNear(ferr), real_fit_params));
+
+}
+
 TEST_F(GPUSolverMultiParam, MultiParams) {
     solver->options.max_iterations = 20;
     solver->options.initial_dampening_factor = 1e-3;

@@ -40,6 +40,16 @@ private:
     float* measurements_d;
 };
 
+class BealesCostFunction : public telef::solver::CostFunction {
+public:
+    BealesCostFunction(int nRes, const std::vector<int>& paramSizes_);
+    virtual ~BealesCostFunction();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+private:
+    //float* measurements_d;
+};
+
 class TestMultiParamCostFunction : public telef::solver::CostFunction {
 public:
     TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_);
@@ -92,6 +102,20 @@ public:
 
 // A new one of these is created for each test
 class GPUSolverTest : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
+    std::vector<float> params;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+
+// A new one of these is created for each test
+class BealesTest : public testing::Test
 {
 public:
 
