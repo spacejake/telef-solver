@@ -132,6 +132,9 @@ bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const floa
     bool isPosDefMat = decompose_cholesky(solver_handle, hessianLowTri, nParams);
 
     if (isPosDefMat) {
+        //Multipy gradients by -1, we must solve got H * x = -g
+        float alpha = -1.f;
+        cublasSscal(cublasHandle, nParams, &alpha, deltaParams, 1);
         solve_system_cholesky(solver_handle, hessianLowTri, deltaParams, nParams);
     }
 
