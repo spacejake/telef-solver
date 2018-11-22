@@ -78,7 +78,7 @@ TEST_F(BealesTest, solve2) {
 
 }
 
-TEST_F(SchwefelTest, solve2) {
+TEST_F(SchwefelTest, solve) {
     solver->options.initial_dampening_factor = 1;
     solver->options.verbose = true;
 

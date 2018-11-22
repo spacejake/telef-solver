@@ -310,13 +310,13 @@ void SchwefelTest::SetUp()
 {
     solver = std::make_shared<GPUSolver>();
     problem = std::make_shared<GPUProblem>();
-    n = 5000;
+    n = 1024;
 
     std::vector<int> nParams = {n};
-    int nRes = n;
+    int nRes = 1;
     auto cost = std::make_shared<SchwefelCostFunction>(nRes, nParams);
 
-    params = std::vector<float>(n, 0.f);
+    params = std::vector<float>(n, 400.f);
     std::vector<float*> initParams = {params.data()};
 
     auto resFunc = problem->addResidualFunction(cost, initParams);
