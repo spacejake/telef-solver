@@ -74,8 +74,8 @@ namespace telef::solver {
 
         virtual void onShare(){
             // We will be using the shared parameters now
-            SOLVER_CUDA_FREE(parameters);
-            SOLVER_CUDA_FREE(bestParameters);
+            //SOLVER_CUDA_FREE(parameters);
+            //SOLVER_CUDA_FREE(bestParameters);
         }
 
     private:
