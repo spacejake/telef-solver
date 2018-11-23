@@ -316,6 +316,10 @@ void SchwefelTest::SetUp()
     int nRes = 1;
     auto cost = std::make_shared<SchwefelCostFunction>(nRes, nParams);
 
+    // due to d/dx abs(x) = abs(x)/x, non-differentiable at 0. Don't start at 0,
+    // otherwise solver will considards converged (gradient will be 0).
+    // This is a flaw of the LM algorithm, when x0 is a local minimizer and not x* (global minimizer),
+    // LM quits if initial gradient is 0.
     params = std::vector<float>(n, -1);
     std::vector<float*> initParams = {params.data()};
 
