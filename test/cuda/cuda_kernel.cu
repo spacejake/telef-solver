@@ -366,9 +366,13 @@ void _schwefel_jacobi(float *jacobians, const float *params, const int nParams) 
 
 
     for (int i = start_index; i < nParams; i += stride) {
-        float x = abs(params[i]);
-        float x_sqrt = sqrt(x);
-        jacobians[i] = -sin(x_sqrt) - 0.5f * x_sqrt * cos(x_sqrt);
+        float x = params[i];
+        float x_sqrt = sqrt(abs(x));
+        if (x == 0) {
+            jacobians[i] = 0;
+        } else {
+            jacobians[i] = -sin(x_sqrt) - 0.5f * x_sqrt * cos(x_sqrt);
+        }
     }
 }
 

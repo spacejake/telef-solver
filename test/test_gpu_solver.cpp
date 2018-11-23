@@ -79,8 +79,9 @@ TEST_F(BealesTest, solve2) {
 }
 
 TEST_F(SchwefelTest, solve) {
-    solver->options.initial_dampening_factor = 1e-3;
-    //solver->options.gradient_tolerance = 1e-20;
+    solver->options.initial_dampening_factor = 1;
+    solver->options.gradient_tolerance = 1e-20;
+    solver->options.step_tolerance = 1e-20;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);

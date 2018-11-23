@@ -316,7 +316,7 @@ void SchwefelTest::SetUp()
     int nRes = 1;
     auto cost = std::make_shared<SchwefelCostFunction>(nRes, nParams);
 
-    params = std::vector<float>(n, 400.f);
+    params = std::vector<float>(n, -1);
     std::vector<float*> initParams = {params.data()};
 
     auto resFunc = problem->addResidualFunction(cost, initParams);
