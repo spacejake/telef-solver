@@ -46,7 +46,7 @@ TEST_F(GPUSolverTest, solve2) {
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
     //FIXME: Debug mode results in different params {-3.89191, -0.46297}, why?
-    vector<float> real_fit_params = {-2.01896, 0.0538367};
+    vector<float> real_fit_params = {1.22542, -1.5641};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -106,8 +106,8 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
-    vector<float> real_fit_params1 = { -0.804031, -1.22526 };
-    vector<float> real_fit_params2 = {1.81251};
+    vector<float> real_fit_params1 = { -0.361317, -1.81227 };
+    vector<float> real_fit_params2 = {1.65666};
 
     // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
@@ -123,6 +123,9 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
 
 TEST_F(GPUSolver4Param, MultiParams) {
     // TODO: This is a bad example, fix!!!!
+    solver->options.initial_dampening_factor = 1;
+    solver->options.gradient_tolerance = 1e-20;
+    solver->options.step_tolerance = 1e-20;
     solver->options.verbose = true;
 
     Status  status = solver->solve(problem);
@@ -155,12 +158,11 @@ TEST_F(GPUSolverMultiResidual, MultiObjective) {
     EXPECT_TRUE(Status::CONVERGENCE == status);
 
     // Independant: Our current best LS Error is 22.5, ceres is 22.5
-    vector<float> real_fit_params1 = {1.57844, 4.01355};
-    vector<float> real_fit_params2 = {1.62091, 0.361981};
+    vector<float> real_fit_params1 = {2.42385, 1.70211};
+    vector<float> real_fit_params2 = {1.22791, 0.2099};
 
-    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
+    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple global minimums
     // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
-//    vector<float> real_fit_params = {-2.60216, 0.0318891};
 
     float ferr = 1e-3;
     EXPECT_THAT(params1,
