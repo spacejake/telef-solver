@@ -317,7 +317,7 @@ void _schwefel_sum(float *sum_f, const float *params, const int nParams) {
     float sum = 0.f;
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
-        float fi = -1.f * params[i] * sin( sqrt(abs(params[i])) );
+        float fi = params[i] * sin( sqrt(abs(params[i])) );
         //printf("F(x(%d):%.4f) = %.4f\n", i, params[i], fi);
         sum += fi;
     }
@@ -332,7 +332,7 @@ __global__
 void _schwefel_res(float *residuals, const float *sum, const int nParams) {
     const float y = 418.98288727*nParams;
 
-    residuals[0] = y + sum[0];
+    residuals[0] = y - sum[0];
 }
 
 void schwefel_res(float *residuals, const float *params,
@@ -371,6 +371,8 @@ void _schwefel_jacobi(float *jacobians, const float *params, const int nParams) 
         if (x == 0) {
             jacobians[i] = 0;
         } else {
+//            const float sign = (x >= 0.0f) ? 1.0f : -1.0f;
+//            jacobians[i] = -sin(x_sqrt) + sign * 0.5f * x_sqrt * cos(x_sqrt);
             jacobians[i] = -sin(x_sqrt) - 0.5f * x_sqrt * cos(x_sqrt);
         }
     }

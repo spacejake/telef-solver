@@ -320,7 +320,7 @@ void SchwefelTest::SetUp()
     // otherwise solver will considards converged (gradient will be 0).
     // This is a flaw of the LM algorithm, when x0 is a local minimizer and not x* (global minimizer),
     // LM quits if initial gradient is 0.
-    params = std::vector<float>(n, -1);
+    params = std::vector<float>(n, 1.f);
     std::vector<float*> initParams = {params.data()};
 
     auto resFunc = problem->addResidualFunction(cost, initParams);

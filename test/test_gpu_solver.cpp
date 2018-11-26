@@ -79,6 +79,7 @@ TEST_F(BealesTest, solve2) {
 }
 
 TEST_F(SchwefelTest, solve) {
+    // For large residuals using many parameters, we should use 100% of the initial dampening factor
     solver->options.initial_dampening_factor = 1;
     solver->options.gradient_tolerance = 1e-20;
     solver->options.step_tolerance = 1e-20;
@@ -96,6 +97,7 @@ TEST_F(SchwefelTest, solve) {
                 Pointwise(FloatNear(ferr), real_fit_params));
 
 }
+
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
     solver->options.max_iterations = 20;
