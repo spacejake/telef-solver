@@ -99,7 +99,19 @@ TEST_F(SchwefelTest, solve) {
 }
 
 TEST_F(PowellTest, solve) {
-    // For large residuals using many parameters, we should use 100% of the initial dampening factor
+    // PowellTest minimizes Powell's singular function.
+    //
+    //   F = 1/2 (f1^2 + f2^2 + f3^2 + f4^2)
+    //
+    //   f1 = x1 + 10*x2;
+    //   f2 = sqrt(5) * (x3 - x4)
+    //   f3 = (x2 - 2*x3)^2
+    //   f4 = sqrt(10) * (x1 - x4)^2
+    //
+    // The starting values are x1 = 3, x2 = -1, x3 = 0, x4 = 1.
+    // The minimum is 0 at (x1, x2, x3, x4) = 0.
+    // Reference to Ceres Powell example program for comparison
+
     solver->options.initial_dampening_factor = 1;
 //    solver->options.gradient_tolerance = 1e-20;
 //    solver->options.step_tolerance = 1e-20;
@@ -112,7 +124,6 @@ TEST_F(PowellTest, solve) {
     float actual[4] = {x1, x2, x3, x4};
     vector<float> real_fit_params(4, 0.f);
 
-    // Cannot solve at higher precision due to floating point error?
 //    float ferr = 1e-5;
     float ferr = 1e-3;
     EXPECT_THAT(actual,
@@ -141,35 +152,6 @@ TEST_F(GPUSolverMultiParam, MultiParams) {
                 Pointwise(FloatNear(ferr), real_fit_params1));
     EXPECT_THAT(params2,
                 Pointwise(FloatNear(ferr), real_fit_params2));
-
-}
-
-TEST_F(GPUSolver4Param, MultiParams) {
-    // TODO: This is a bad example, fix!!!!
-    solver->options.initial_dampening_factor = 1;
-    solver->options.gradient_tolerance = 1e-20;
-    solver->options.step_tolerance = 1e-20;
-    solver->options.verbose = true;
-
-    Status  status = solver->solve(problem);
-
-    EXPECT_TRUE(Status::CONVERGENCE == status);
-
-    vector<float> real_fit_params1 = {-1.00897, 0.044994};
-    vector<float> real_fit_params2 = {1.52608};
-    vector<float> real_fit_params3 = {-1, 1};
-    vector<float> real_fit_params4 = {1, 0.5};
-
-
-    float ferr = 1e-3;
-    EXPECT_THAT(params1,
-                Pointwise(FloatNear(ferr), real_fit_params1));
-    EXPECT_THAT(params2,
-                Pointwise(FloatNear(ferr), real_fit_params2));
-    EXPECT_THAT(params3,
-                Pointwise(FloatNear(ferr), real_fit_params3));
-    EXPECT_THAT(params4,
-                Pointwise(FloatNear(ferr), real_fit_params4));
 
 }
 
