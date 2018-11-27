@@ -3,11 +3,13 @@ cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 include_directories("${PROJECT_SOURCE_DIR}")
 
 set( cudaTestHdr
-        cuda/cuda_kernel.h
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_powell.h"
         )
 
 set( cudaTestSrc
-        cuda/cuda_kernel.cu
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_powell.cu"
         )
 
 #source_group("Interface Header Files" FILES ${interfaceHdr})
@@ -28,8 +30,10 @@ target_sources(${PROJECT_NAME}
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/mock_gpu.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mock_gpu.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mock_powell.cpp"
+
+    ${cudaTestHdr}
+    ${cudaTestSrc}
 )
 
 #set(SOURCE

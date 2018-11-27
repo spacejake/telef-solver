@@ -98,6 +98,27 @@ TEST_F(SchwefelTest, solve) {
 
 }
 
+TEST_F(PowellTest, solve) {
+    // For large residuals using many parameters, we should use 100% of the initial dampening factor
+    solver->options.initial_dampening_factor = 1;
+//    solver->options.gradient_tolerance = 1e-20;
+//    solver->options.step_tolerance = 1e-20;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    float actual[4] = {x1, x2, x3, x4};
+    vector<float> real_fit_params(4, 0.f);
+
+    // Cannot solve at higher precision due to floating point error?
+//    float ferr = 1e-5;
+    float ferr = 1e-3;
+    EXPECT_THAT(actual,
+                Pointwise(FloatNear(ferr), real_fit_params));
+
+}
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
     solver->options.max_iterations = 20;

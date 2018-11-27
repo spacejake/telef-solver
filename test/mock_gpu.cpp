@@ -118,7 +118,7 @@ void SchwefelCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr re
     schwefel_jacobi(params->getJacobians(), params->getParameters(),
                   residualBlock->numResiduals(), params->numParameters());
 }
-//BealesCostFunction END
+//SchwefelCostFunction END
 
 //TestMultiParamCostFunction START
 TestMultiParamCostFunction::TestMultiParamCostFunction(int nRes, const std::vector<int>& paramSizes_) : telef::solver::CostFunction(nRes, paramSizes_){
@@ -305,7 +305,7 @@ void BealesTest::TearDown() {
 
 //BaelesTest END
 
-//BaelesTest START
+//SchwefelTest START
 void SchwefelTest::SetUp()
 {
     solver = std::make_shared<GPUSolver>();
@@ -328,8 +328,9 @@ void SchwefelTest::SetUp()
 
 void SchwefelTest::TearDown() {
 }
+//SchwefelTest END
 
-//BaelesTest END
+
 
 //GPUSolverMultiParam START
 void GPUSolverMultiParam::SetUp()

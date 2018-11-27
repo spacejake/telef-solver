@@ -8,6 +8,119 @@
 #include <solver/gpu/gpuProblem.h>
 #include "solver/gpu/gpuResidualFunction.h"
 
+
+
+/*************************Benchmarks*************************************/
+
+//BealesTest Start
+// A new one of these is created for each test
+class BealesTest : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
+    std::vector<float> params;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+class BealesCostFunction : public telef::solver::CostFunction {
+public:
+    BealesCostFunction(int nRes, const std::vector<int>& paramSizes_);
+    virtual ~BealesCostFunction();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+private:
+    //float* measurements_d;
+};
+//BealesTest End
+
+//SchwefelTest Start
+class SchwefelTest : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
+    std::vector<float> params;
+    int n;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+class SchwefelCostFunction : public telef::solver::CostFunction {
+public:
+    SchwefelCostFunction(int nRes, const std::vector<int>& paramSizes_);
+    virtual ~SchwefelCostFunction();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+private:
+    //float* measurements_d;
+};
+//SchwefelTest End
+
+//PowellTest Start
+class PowellTest : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
+    std::vector<float> params;
+
+    float x1;
+    float x2;
+    float x3;
+    float x4;
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+class PowellCostFunction1 : public telef::solver::CostFunction {
+public:
+    PowellCostFunction1(int nRes, const std::vector<int>& paramSizes_)
+            : telef::solver::CostFunction(nRes, paramSizes_){}
+    virtual ~PowellCostFunction1(){}
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+};
+
+class PowellCostFunction2 : public telef::solver::CostFunction {
+public:
+    PowellCostFunction2(int nRes, const std::vector<int>& paramSizes_)
+            : telef::solver::CostFunction(nRes, paramSizes_){}
+    virtual ~PowellCostFunction2(){}
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+};
+
+class PowellCostFunction3 : public telef::solver::CostFunction {
+public:
+    PowellCostFunction3(int nRes, const std::vector<int>& paramSizes_)
+            : telef::solver::CostFunction(nRes, paramSizes_){}
+    virtual ~PowellCostFunction3(){}
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+};
+
+class PowellCostFunction4 : public telef::solver::CostFunction {
+public:
+    PowellCostFunction4(int nRes, const std::vector<int>& paramSizes_)
+        : telef::solver::CostFunction(nRes, paramSizes_){}
+    virtual ~PowellCostFunction4(){}
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+};
+//PowellTest End
+
+
+/*************************Benchmarks End*************************************/
+
+
 class TestCostFunctionSimple : public telef::solver::CostFunction {
 public:
     TestCostFunctionSimple(int nRes, const std::vector<int>& paramSizes_);
@@ -38,27 +151,6 @@ public:
     virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:
     float* measurements_d;
-};
-
-class BealesCostFunction : public telef::solver::CostFunction {
-public:
-    BealesCostFunction(int nRes, const std::vector<int>& paramSizes_);
-    virtual ~BealesCostFunction();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
-private:
-    //float* measurements_d;
-};
-
-
-class SchwefelCostFunction : public telef::solver::CostFunction {
-public:
-    SchwefelCostFunction(int nRes, const std::vector<int>& paramSizes_);
-    virtual ~SchwefelCostFunction();
-    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
-    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
-private:
-    //float* measurements_d;
 };
 
 class TestMultiParamCostFunction : public telef::solver::CostFunction {
@@ -125,32 +217,6 @@ public:
 };
 
 
-// A new one of these is created for each test
-class BealesTest : public testing::Test
-{
-public:
-
-    telef::solver::GPUSolver::Ptr solver;
-    telef::solver::GPUProblem::Ptr problem;
-    std::vector<float> params;
-
-    virtual void SetUp();
-    virtual void TearDown();
-};
-
-// A new one of these is created for each test
-class SchwefelTest : public testing::Test
-{
-public:
-
-    telef::solver::GPUSolver::Ptr solver;
-    telef::solver::GPUProblem::Ptr problem;
-    std::vector<float> params;
-    int n;
-
-    virtual void SetUp();
-    virtual void TearDown();
-};
 
 // A new one of these is created for each test
 class GPUSolverMultiParam : public testing::Test
