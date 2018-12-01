@@ -118,6 +118,11 @@ namespace telef::solver {
             return std::make_shared<GPUResidualFunction>(costFunc_, resBlock);
         }
 
+        virtual void fillGlobalJacobian(float *globalJacobian, float *jacobians, int nResiduals, int nParameters){
+            SOLVER_CUDA_CHECK(cudaMemcpy(globalJacobian, jacobians,
+                    nResiduals*nParameters* sizeof(float), cudaMemcpyDeviceToDevice));
+        }
+
     protected:
         cublasHandle_t cublasHandle;
 

@@ -23,6 +23,7 @@ namespace telef::solver {
            }
         }
 
+        virtual void fillGlobalJacobian(float *globalJacobian, float *jacobians, int nResiduals, int nParameters) = 0;
 
         // TODO: Maintain Block paradyme, move global gradient and hessian to ProblemBlock?
         /**
@@ -40,10 +41,15 @@ namespace telef::solver {
                 auto residualBlock = resFunc->getResidualBlock();
                 auto ParamBlocks  = residualBlock->getParameterBlocks();
                 for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
+                    int globalJOffset =
+                            residualBlock->getOffset() * numEffectiveParams() + paramBlock->getOffset();
+                    fillGlobalJacobian(getJacobian() + globalJOffset, paramBlock->getJacobians(),
+                            residualBlock->numResiduals(), paramBlock->numParameters());
 
                     calcGradients(getGradient()+paramBlock->getOffset(),
                                   paramBlock->getJacobians(), residualBlock->getResiduals(),
                                   residualBlock->numResiduals(), paramBlock->numParameters());
+
                     //print_array("computeDerivatives::Gradient", getGradient(), numEffectiveParams());
 
                 }
@@ -235,6 +241,7 @@ namespace telef::solver {
         //virtual float* getBestParameters() = 0;
         virtual float* getDeltaParameters() = 0;
         virtual float* getDampeningFactors() = 0;
+        virtual float* getJacobian() = 0;
         virtual float* getGradient() = 0;
         virtual float* getHessian() = 0;
 
