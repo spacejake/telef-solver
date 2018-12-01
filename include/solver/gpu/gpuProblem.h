@@ -27,6 +27,7 @@ namespace telef::solver {
             SOLVER_CUDA_FREE(parameters2norm);
             SOLVER_CUDA_FREE(deltaParams);
             SOLVER_CUDA_FREE(dampeningFactors);
+            SOLVER_CUDA_FREE(jacobian);
             SOLVER_CUDA_FREE(gradients);
             SOLVER_CUDA_FREE(hessian);
             SOLVER_CUDA_FREE(hessianLowTri);
@@ -65,6 +66,10 @@ namespace telef::solver {
             return dampeningFactors;
         }
 
+        virtual float* getJacobian() {
+            return jacobian;
+        }
+
         virtual float* getGradient() {
             return gradients;
         }
@@ -89,6 +94,7 @@ namespace telef::solver {
             SOLVER_CUDA_ALLOC_AND_ZERO(&predictedGain, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&parameters2norm, static_cast<size_t>(1));
             SOLVER_CUDA_ALLOC_AND_ZERO(&deltaParams, static_cast<size_t>(nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&jacobian, static_cast<size_t>(nEffectiveParams*numEffectiveResiduals()));
             SOLVER_CUDA_ALLOC_AND_ZERO(&gradients, static_cast<size_t>(nEffectiveParams));
 
             SOLVER_CUDA_ALLOC_AND_ZERO(&dampeningFactors, static_cast<size_t>(nEffectiveParams));
@@ -137,7 +143,7 @@ namespace telef::solver {
         float* deltaParams;
 
         float* dampeningFactors;
-
+        float* jacobian;
         float* gradients;
         float* hessian;
         float* hessianLowTri;

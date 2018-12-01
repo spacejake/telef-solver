@@ -61,7 +61,7 @@ namespace telef::solver {
             // Compute Globa Hessian
             // TODO: write unit tests for global hessian computation
             // TODO: use cublas<t>geam() to transpose the upper half into the lower half instead, modify loop accordingly
-            for (int hBlkRow = 0; hBlkRow < nJacobianBlockCols; hBlkRow++) {
+            /*for (int hBlkRow = 0; hBlkRow < nJacobianBlockCols; hBlkRow++) {
                 for (int hBlkCol = 0; hBlkCol < nJacobianBlockCols; hBlkCol++) {
                     for (int i = 0; i < nJacobianBlockRows; i++) {
                         auto paramT = getFromJBlock(i, hBlkCol);
@@ -91,7 +91,11 @@ namespace telef::solver {
 //                         print_array("calculateHessianBlock::Hessian", getHessian(), nEffectiveParams*nEffectiveParams );
                     }
                 }
-            }
+            }*/
+            calcHessianBlock(getHessian(), numEffectiveParams(),
+                             getJacobian(), numEffectiveParams(),
+                             getJacobian(), numEffectiveParams(),
+                             numEffectiveResiduals());
 
 //            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
         }
