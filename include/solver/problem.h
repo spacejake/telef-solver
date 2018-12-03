@@ -66,7 +66,7 @@ namespace telef::solver {
 
                 }
             }
-            print_array("computeDerivatives::Jacobians::Done", getJacobian(), numEffectiveParams()*numEffectiveResiduals());
+//            print_array("computeDerivatives::Jacobians::Done", getJacobian(), numEffectiveParams()*numEffectiveResiduals());
 
             // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
 //            print_array("computeDerivatives::Gradient::END", getGradient(), numEffectiveParams());
@@ -110,7 +110,7 @@ namespace telef::solver {
                              getJacobian(), numEffectiveParams(),
                              numEffectiveResiduals());
 
-            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
+//            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
         }
 
         float setError(float error_) {
