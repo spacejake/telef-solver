@@ -81,6 +81,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
     int consecutive_invalid_steps = 0;
     int iter = 0;
+    float gainRatio = 0;
     while (status == Status::RUNNING && iter++ < options.max_iterations) {
 
         float newError = 0;
@@ -152,10 +153,10 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
              * hlm garuntieed not be 0 because we check above, lambda cannot be 0
              *
              */
-            float gainRatio = computeGainRatio(problem->getPredictedGain(),
-                                               error, newError, problem->getLambda(),
-                                               problem->getDeltaParameters(), problem->getGradient(),
-                                               problem->numEffectiveParams());
+            gainRatio = computeGainRatio(problem->getPredictedGain(),
+                                         error, newError, problem->getLambda(),
+                                         problem->getDeltaParameters(), problem->getGradient(),
+                                         problem->numEffectiveParams());
 
             //printf("GainRatio:%.4f\n", gainRatio);
 
@@ -233,6 +234,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             logmsg << "\t\tError: " << error;
             logmsg << "\t\tChange: " << iterDerr;
+            logmsg << "\t\tGainRatio: " << gainRatio;
 
             std::cout << logmsg.str() << std::endl;
 

@@ -50,3 +50,14 @@ __global__
 void _compute_predicted_gain(float* predGain, float *lambda, float *daltaParams, float *gradient, int nParams);
 
 void compute_predicted_gain(float* predGain, float *lambda, float *daltaParams, float *gradient, int nParams);
+
+__global__
+void _fill_Jacobian(float* globalJacobian, const float *jacobian,
+                    const int nGlobalParams, const int nGlobalRes,
+                    const int nParams, const int nRes,
+                    const int paramOffset, const int resOffset);
+
+void fill_Jacobian(float* globalJacobian, const float *jacobian,
+                   const int nGlobalParams, const int nGlobalRes,
+                   const int nParams, const int nRes,
+                   const int paramOffset, const int resOffset);

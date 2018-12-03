@@ -129,6 +129,16 @@ namespace telef::solver {
                     nResiduals*nParameters* sizeof(float), cudaMemcpyDeviceToDevice));
         }
 
+        virtual void fillGlobalJacobian(float* globalJacobian, const float *jacobian,
+                                const int nGlobalParams, const int nGlobalRes,
+                                const int nParams, const int nRes,
+                                const int paramOffset, const int resOffset) {
+            fill_Jacobian(globalJacobian, jacobian,
+                          nGlobalParams, nGlobalRes,
+                          nParams, nRes,
+                          paramOffset, resOffset);
+        }
+
     protected:
         cublasHandle_t cublasHandle;
 

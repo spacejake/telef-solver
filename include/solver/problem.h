@@ -25,6 +25,12 @@ namespace telef::solver {
 
         virtual void fillGlobalJacobian(float *globalJacobian, float *jacobians, int nResiduals, int nParameters) = 0;
 
+        virtual void fillGlobalJacobian(float* globalJacobian, const float *jacobian,
+                const int nGlobalParams, const int nGlobalRes,
+                const int nParams, const int nRes,
+                const int paramOffset, const int resOffset) = 0;
+
+
         // TODO: Maintain Block paradyme, move global gradient and hessian to ProblemBlock?
         /**
          * Computes the Derivatives Jacobian, Gradients, and Hessian matrices.
@@ -41,10 +47,16 @@ namespace telef::solver {
                 auto residualBlock = resFunc->getResidualBlock();
                 auto ParamBlocks  = residualBlock->getParameterBlocks();
                 for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
-                    int globalJOffset =
-                            residualBlock->getOffset() * numEffectiveParams() + paramBlock->getOffset();
-                    fillGlobalJacobian(getJacobian() + globalJOffset, paramBlock->getJacobians(),
-                            residualBlock->numResiduals(), paramBlock->numParameters());
+//                    int globalJOffset =
+//                            paramBlock->getOffset() * numEffectiveResiduals() + residualBlock->getOffset();
+//                    fillGlobalJacobian(getJacobian() + globalJOffset, paramBlock->getJacobians(),
+//                            residualBlock->numResiduals(), paramBlock->numParameters());
+                    fillGlobalJacobian(getJacobian(), paramBlock->getJacobians(),
+                            numEffectiveParams(), numEffectiveResiduals(),
+                            paramBlock->numParameters(), residualBlock->numResiduals(),
+                            paramBlock->getOffset(), residualBlock->getOffset());
+
+                    //print_array("computeDerivatives::Jacobians", getJacobian(), numEffectiveParams()*numEffectiveResiduals());
 
                     calcGradients(getGradient()+paramBlock->getOffset(),
                                   paramBlock->getJacobians(), residualBlock->getResiduals(),
@@ -54,6 +66,7 @@ namespace telef::solver {
 
                 }
             }
+            print_array("computeDerivatives::Jacobians::Done", getJacobian(), numEffectiveParams()*numEffectiveResiduals());
 
             // TODO: Sum all gradients to determine where on curve we are, post to status; Also use for evaluation?.
 //            print_array("computeDerivatives::Gradient::END", getGradient(), numEffectiveParams());
@@ -97,7 +110,7 @@ namespace telef::solver {
                              getJacobian(), numEffectiveParams(),
                              numEffectiveResiduals());
 
-//            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
+            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
         }
 
         float setError(float error_) {

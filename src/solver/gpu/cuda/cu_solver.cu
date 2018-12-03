@@ -495,3 +495,42 @@ void compute_predicted_gain(float* predGain, float *lambda, float *daltaParams, 
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
 }
+
+__global__
+void _fill_Jacobian(float* globalJacobian, const float *jacobian,
+                    const int nGlobalParams, const int nGlobalRes,
+                    const int nParams, const int nRes,
+                    const int paramOffset, const int resOffset){
+    int start_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x; // total number of threads in the grid
+
+    // grid-striding loop
+    float sum = 0;
+    for (int i = start_index; i < nParams; i += stride) {
+        int iGlobal = (paramOffset + i);
+
+        for (int j = 0; j < nRes; j++) {
+            int jGlobal = resOffset + j;
+            int globalIndex = iGlobal * nGlobalRes + jGlobal;
+            int localIndex = i * nRes + j;
+
+            globalJacobian[globalIndex] = jacobian[localIndex];
+        }
+    }
+}
+
+void fill_Jacobian(float* globalJacobian, const float *jacobian,
+                   const int nGlobalParams, const int nGlobalRes,
+                   const int nParams, const int nRes,
+                   const int paramOffset, const int resOffset){
+    dim3 dimBlock(BLOCKSIZE);
+    dim3 dimGrid((nParams + BLOCKSIZE - 1) / BLOCKSIZE);
+
+    _fill_Jacobian << < dimGrid, dimBlock >> >(globalJacobian, jacobian,
+            nGlobalParams, nGlobalRes,
+            nParams, nRes,
+            paramOffset, resOffset);
+
+    SOLVER_CHECK_ERROR_MSG("Kernel Error");
+    cudaDeviceSynchronize();
+}
