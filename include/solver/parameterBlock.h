@@ -85,7 +85,12 @@ namespace telef::solver {
         }
 
         const int getParamBlockIndex() const {
-            return paramBlockIndex;
+            if (isShared()){
+                return shared_parameter->getParamBlockIndex();
+            }
+            else {
+                return paramBlockIndex;
+            }
         }
 
         void setParamBlockIndex(int idx){
