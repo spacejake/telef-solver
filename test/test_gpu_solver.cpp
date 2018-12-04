@@ -176,9 +176,9 @@ TEST_F(GPUSolverMultiResidual, MultiObjective) {
 
 }
 
-TEST_F(GPUSolverMultiResidual, MultiObjectiveShared) {
-//    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
-//            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
+TEST_F(GPUSolverMultiResidual, MultiObjectiveExplicitShared) {
+    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
+            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
 
     solver->options.verbose = true;
 
@@ -194,6 +194,24 @@ TEST_F(GPUSolverMultiResidual, MultiObjectiveShared) {
     EXPECT_THAT(params1,
                 Pointwise(FloatNear(ferr), real_fit_params1));
     EXPECT_THAT(params2,
+                Pointwise(FloatNear(ferr), real_fit_params1));
+
+}
+
+TEST_F(GPUSolverMultiResidualImplicit, MultiObjectiveImplicitShared) {
+
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    // Shared: Our current best LS Error is 22.5, ceres is 22.5
+    vector<float> real_fit_params1 = {4.77069, 0.439377};
+
+
+    float ferr = 1e-3;
+    EXPECT_THAT(params1,
                 Pointwise(FloatNear(ferr), real_fit_params1));
 
 }

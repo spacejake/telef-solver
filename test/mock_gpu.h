@@ -262,4 +262,13 @@ public:
 
     virtual void SetUp();
     virtual void TearDown();
+private:
+};
+
+// A new one of these is created for each test
+class GPUSolverMultiResidualImplicit : public GPUSolverMultiResidual
+{
+public:
+    virtual void SetUp();
+private:
 };
