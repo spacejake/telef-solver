@@ -27,22 +27,24 @@ namespace telef::solver {
             if (!isShared()) {
                 resultParameters = initialParams_;
                 initializeParameters();
+            } else {
+                resultParameters = initialParams_;
             }
         }
 
         virtual void initializeParameters(){
             if (!isShared()) {
-                cudaMemcpy(parameters, resultParameters, nParameters * sizeof(float), cudaMemcpyHostToDevice);
-                cudaMemcpy(bestParameters, parameters, nParameters * sizeof(float), cudaMemcpyDeviceToDevice);
+                SOLVER_CUDA_CHECK(cudaMemcpy(parameters, resultParameters, nParameters * sizeof(float), cudaMemcpyHostToDevice));
+                SOLVER_CUDA_CHECK(cudaMemcpy(bestParameters, parameters, nParameters * sizeof(float), cudaMemcpyDeviceToDevice));
             }
         }
 
         virtual float* getResultParameters() {
             // FIXME: What if user uses same pointer or doesn't but still considard shared?? Just overwrite it?
             if (!isShared()) {
-                cudaMemcpy(resultParameters, getBestParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
+                SOLVER_CUDA_CHECK(cudaMemcpy(resultParameters, getBestParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost));
             } else {
-                cudaMemcpy(resultParameters, shared_parameter->getBestParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost);
+                SOLVER_CUDA_CHECK(cudaMemcpy(resultParameters, shared_parameter->getBestParameters(), nParameters * sizeof(float), cudaMemcpyDeviceToHost));
             }
 
             return resultParameters;

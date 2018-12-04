@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <map>
 #include <cuda_runtime.h>
 
 #include "solver/residualFunction.h"
@@ -121,8 +122,30 @@ namespace telef::solver {
             return error;
         }
 
+        /**
+         *
+         * @param resFunc_
+         * @param params_, Problem does not take ownership of pointers for input parameters, user's ownership maintained
+         */
         void addResidualFunction(ResidualFunction::Ptr resFunc_,
                                  const std::vector<float*> &params_){
+
+            auto paramBlock = resFunc_->getResidualBlock()->getParameterBlocks();
+            auto nParams = paramBlock.size();
+            assert(nParams == params_.size() && "Residual Function with different number of parameters");
+
+            for (int idx; idx < nParams; idx++) {
+
+                auto elem = parameterOwners.insert(std::make_pair(params_[idx], paramBlock[idx]));
+
+                // If ownership already exists, share with original parameter
+                if(!elem.second)
+                {
+                    auto paramOwner = parameterOwners.at(params_[idx]);
+                    paramBlock[idx]->share(paramOwner);
+                }
+            }
+
             resFunc_->setInitialParams(params_);
             residualFuncs.push_back(resFunc_);
         }
@@ -134,8 +157,7 @@ namespace telef::solver {
 
             auto resFunc = createResidualFunction(costFunc_);
 
-            resFunc->setInitialParams(params_);
-            residualFuncs.push_back(resFunc);
+            addResidualFunction(resFunc, params_);
 
             return resFunc;
         }
@@ -287,5 +309,7 @@ namespace telef::solver {
         int nJacobianBlockRows;
         int nJacobianBlockCols;
         std::vector<ParameterBlock::Ptr> jacobianBlocks;
+
+        std::map<float*, ParameterBlock::Ptr> parameterOwners;
     };
 }
