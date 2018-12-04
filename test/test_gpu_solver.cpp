@@ -128,7 +128,6 @@ TEST_F(PowellTest, solve) {
     float ferr = 1e-3;
     EXPECT_THAT(actual,
                 Pointwise(FloatNear(ferr), real_fit_params));
-
 }
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
@@ -178,8 +177,8 @@ TEST_F(GPUSolverMultiResidual, MultiObjective) {
 }
 
 TEST_F(GPUSolverMultiResidual, MultiObjectiveShared) {
-    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
-            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
+//    resFunc1->getResidualBlock()->getParameterBlocks()[0]->share(
+//            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
 
     solver->options.verbose = true;
 

@@ -35,15 +35,15 @@ void PowellTest::SetUp()
 
 
     // Explicitly share parameters, TODO: add implicit base on pointer -> parameterBlock, share in addResidualFunction.
-    resFunc3->getResidualBlock()->getParameterBlocks()[0]->share(
-            resFunc1->getResidualBlock()->getParameterBlocks()[1]);
-    resFunc3->getResidualBlock()->getParameterBlocks()[1]->share(
-            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
-
-    resFunc4->getResidualBlock()->getParameterBlocks()[0]->share(
-            resFunc1->getResidualBlock()->getParameterBlocks()[0]);
-    resFunc4->getResidualBlock()->getParameterBlocks()[1]->share(
-            resFunc2->getResidualBlock()->getParameterBlocks()[1]);
+//    resFunc3->getResidualBlock()->getParameterBlocks()[0]->share(
+//            resFunc1->getResidualBlock()->getParameterBlocks()[1]);
+//    resFunc3->getResidualBlock()->getParameterBlocks()[1]->share(
+//            resFunc2->getResidualBlock()->getParameterBlocks()[0]);
+//
+//    resFunc4->getResidualBlock()->getParameterBlocks()[0]->share(
+//            resFunc1->getResidualBlock()->getParameterBlocks()[0]);
+//    resFunc4->getResidualBlock()->getParameterBlocks()[1]->share(
+//            resFunc2->getResidualBlock()->getParameterBlocks()[1]);
 }
 
 void PowellTest::TearDown() {
