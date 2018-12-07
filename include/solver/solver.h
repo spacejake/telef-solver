@@ -121,7 +121,7 @@ namespace telef::solver {
          * @param tolerance, must be grater than 0
          * @return True if sum(Gradient) is below tolerance
          */
-        virtual bool evaluateGradient(float *gradient, int nParams, float tolerance) = 0;
+        virtual bool evaluateGradient(float &inf_norm_grad, float *gradient, int nParams, float tolerance) = 0;
 
 
 

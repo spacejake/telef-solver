@@ -119,6 +119,39 @@ public:
 
 
 /*************************Benchmarks End*************************************/
+/*************************Rigid Fitting Start*************************************/
+class RigidFitTest : public testing::Test
+{
+public:
+
+    telef::solver::GPUSolver::Ptr solver;
+    telef::solver::GPUProblem::Ptr problem;
+
+    std::vector<float> result_T;
+    std::vector<float> result_U;
+
+    int n;
+
+    void loadData(std::vector<float> &data, std::string file);
+
+    virtual void SetUp();
+    virtual void TearDown();
+};
+
+class RigidFitCostFunction : public telef::solver::CostFunction {
+public:
+    RigidFitCostFunction(std::vector<float> source, std::vector<float> target);
+    virtual ~RigidFitCostFunction();
+    virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
+    virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
+private:
+    cublasHandle_t cublasHandle;
+
+    float* source_d;
+    float* target_d;
+    float* fitted_d;
+};
+/*************************Rigid Fitting End*************************************/
 
 
 class TestCostFunctionSimple : public telef::solver::CostFunction {

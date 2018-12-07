@@ -40,6 +40,9 @@ SET(CUDA_SEPARABLE_COMPILATION ON)
 find_package(CUDA REQUIRED)
 find_package(CBLAS REQUIRED)
 
+############## Define Preprocessor Vars ##################
+add_definitions ( -DTEST_DATA_DIR=\"${CMAKE_SOURCE_DIR}/test/data\")
+
 ############## Define headers and sourcse ################
 set( interfaceHdr
         include/solver/costFunction.h
@@ -49,6 +52,7 @@ set( interfaceHdr
         include/solver/parameterBlock.h
         include/solver/problem.h
         include/solver/util/profile.h
+        include/solver/util/fileio.h
 )
 
 set( interfaceSrc
@@ -141,6 +145,7 @@ target_include_directories(cutelef-solver
         )
 
 target_link_libraries(cutelef-solver
+            stdc++fs
             -lcudart
             -lcublas
             -lcusolver

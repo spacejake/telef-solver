@@ -141,21 +141,21 @@ bool GPUSolver::solveSystem(float *deltaParams, float *hessianLowTri, const floa
     return isPosDefMat;
 }
 
-bool GPUSolver::evaluateGradient(float *gradient, int nParams, float tolerance) {
+bool GPUSolver::evaluateGradient(float &norm_inf_grad, float *gradient, int nParams, float tolerance) {
     // Return math::norm_inf(g) <= e_1
     int index = 0;
-    float iNorm_h = 0;
+    float absMaxGrad_h = 0;
 
     cublasIsamax_v2(cublasHandle, nParams, gradient, 1, &index);
 
     // Fortran 1-based indexing, covert to 0-based index
     index -= 1;
 
-    SOLVER_CUDA_CHECK(cudaMemcpy(&iNorm_h, gradient + index, sizeof(float), cudaMemcpyDeviceToHost));
-    iNorm_h = abs(iNorm_h);
+    SOLVER_CUDA_CHECK(cudaMemcpy(&absMaxGrad_h, gradient + index, sizeof(float), cudaMemcpyDeviceToHost));
+    norm_inf_grad = abs(absMaxGrad_h);
 //    printf("norm-inf(gradient[%d]): %.4f \n", index, iNorm_h);
 
-    return iNorm_h <= tolerance;
+    return norm_inf_grad <= tolerance;
 }
 
 bool GPUSolver::evaluateStep(Problem::Ptr problem, float tolerance) {
