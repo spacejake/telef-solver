@@ -57,7 +57,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         init_error += block_error;
     }
 
-    if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)){
+    float init_norm_inf_grad = 0;
+    if (evaluateGradient(init_norm_inf_grad, problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)){
         status = Status::CONVERGENCE;
         if (options.verbose) {
             std::stringstream logmsg;
@@ -69,6 +70,12 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         // lambda = tau * max(Diag(Initial_Hessian))
         initializeLambda(problem->getLambda(), options.initial_dampening_factor,
                 problem->getHessian(), problem->numEffectiveParams());
+
+        if (options.verbose) {
+            std::stringstream logmsg;
+            logmsg << "Initial Gradient:" << init_norm_inf_grad;
+            std::cout << logmsg.str() << std::endl;
+        }
     }
 
     // outerIter and innerIter is for reporting how many iterations until converging params found
@@ -82,8 +89,12 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
     int consecutive_invalid_steps = 0;
     int iter = 0;
+    float norm_inf_grad = init_norm_inf_grad;
+
     while (status == Status::RUNNING && iter++ < options.max_iterations) {
 
+        float new_norm_inf_grad = norm_inf_grad;
+        float change_norm_inf_grad = 0;
         float newError = 0;
         bool good_step = true; // Determine if all steps are good across parameter and residual blocks
         bool good_iteration = false; // Is this iteration good (better fit than best fit)
@@ -173,7 +184,13 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             good_iteration = false;
             if (consecutive_invalid_steps >= options.max_num_consecutive_invalid_steps) {
                 status = Status::CONVERGENCE_FAILED;
-//                printf("CONVERGENCE_FAILED: Max consecutive bad steps reached");
+
+                if (options.verbose) {
+                    std::stringstream logmsg;
+                    logmsg << "CONVERGENCE_FAILED: Max consecutive bad steps "
+                              "reached " << options.max_num_consecutive_invalid_steps;
+                    std::cout << logmsg.str() << std::endl;
+                }
             }
 
             iterDerr = 0.0f;
@@ -199,9 +216,9 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             derivative_Ttime += PROFILE(
                     problem->computeDerivatives(););
 
-            //TODO: Check Sum of gradients, gradients near zero means minimum likly found. As Ceres Does
+            //TODO: Check Sum of gradients, gradients near zero means minimum likely found. As Ceres Does
             // Convergence achieved?
-            if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)) {
+            if (evaluateGradient(new_norm_inf_grad, problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)) {
                 status = Status::CONVERGENCE;
                 if (options.verbose) {
                     std::stringstream logmsg;
@@ -213,6 +230,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                 // for next iteration, we should recalculate the 2-norm of our best fitted parameters
                 calcParams2Norm(problem->getParams2Norm(), problem);
             }
+            change_norm_inf_grad = new_norm_inf_grad - norm_inf_grad;
+            norm_inf_grad = new_norm_inf_grad;
         }
 
         if (status == Status::RUNNING){
@@ -245,6 +264,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
 
             logmsg << "\t\tError: " << error;
             logmsg << "\t\tChange: " << iterDerr;
+            logmsg << "\t\tGradient: " << new_norm_inf_grad;
+            logmsg << "\t\tGradient Change: " << change_norm_inf_grad;
 
             std::cout << logmsg.str() << std::endl;
 

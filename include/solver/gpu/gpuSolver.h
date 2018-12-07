@@ -53,7 +53,7 @@ namespace telef::solver {
         updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep);
 
 
-        virtual bool evaluateGradient(float *gradient, int nParams, float tolerance);
+        virtual bool evaluateGradient(float &norm_inf_grad, float *gradient, int nParams, float tolerance);
 
         /**
          * convergence reached if
