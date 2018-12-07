@@ -44,7 +44,7 @@ void _print_arr(const float *arr_d, const int n) {
     // grid-striding loop
     for (int i = start_index; i < n; i += stride) {
 
-        printf("Element[%d]: %.5f\n", i, arr_d[i]);
+        printf("Element[%d]: %.11f\n", i, arr_d[i]);
 //        arr_d[i] += 1;
     }
 }
@@ -142,6 +142,8 @@ void calc_error(float* error, const float* residuals, const int nRes){
     _sum_squares << < dimGrid, dimBlock >> >(error, residuals, nRes);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
+
+//    print_array("calc_error:residuals",residuals, nRes);
 }
 
 __global__
@@ -172,14 +174,14 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
         int diagonal_index = i+nParams*i;
-        hessians[diagonal_index] += lambda[0];
+//        hessians[diagonal_index] += lambda[0];
 
         // Lambda scaled by hessian, 0. diagnals will result in failed positive def. test, no way to escape!! but can be faster??
-        //hessians[diagonal_index] += hessians[diagonal_index] * lambda[0];
+//        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0];
 
 
         // expariment??? at times, can converge faster than original LM
-        //hessians[diagonal_index] += hessians[diagonal_index] * lambda[0] + lambda[0];
+        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0] + lambda[0];
 
         /* GPU Fit update code
         if (goodStep)
@@ -236,7 +238,9 @@ void update_parameters(float* newParams, const float* params, const float* newDe
     _update_parameters << < dimGrid, dimBlock >> >(newParams, params, newDelta, nParams);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
-    //print_array("New Params", newParams, nParams);
+
+//    print_array("New Deltas", newDelta, nParams);
+//    print_array("New Params", newParams, nParams);
 }
 
 void initializeSolverBuffer(cusolverDnHandle_t solver_handle,
@@ -350,6 +354,8 @@ void solve_system_cholesky(cusolverDnHandle_t solver_handle, float* matA, float*
 
     cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 
+//    print_array("TriHessians",matA,n);
+//    print_array("-1 * Gradients",matB,n);
     // Compute A = L*LH, result in matA in lower triangular form
     cusolver_status =
             cusolverDnSpotrs(solver_handle, uplo,
@@ -424,7 +430,7 @@ void initialize_lambda(float *lambda, float tauFactor, float *hessian, int nPara
     _convertTo << <1,1>> >(lambda, lamda_int);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
     cudaDeviceSynchronize();
-    //print_array("New Params", newParams, nParams);
+    print_array("initialize_lambda: lambda", lambda, 1);
 
     SOLVER_CUDA_CHECK(cudaFree(lamda_int));
 }

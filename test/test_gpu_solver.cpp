@@ -5,7 +5,8 @@
 #include <iostream>
 #include <string>
 #include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <experimental/filesystem>
+
 
 #include <cublas_v2.h>
 #include <cusolver_common.h>
@@ -14,14 +15,51 @@
 #include "solver/gpu/gpuResidualFunction.h"
 
 #include "solver/util/cudautil.h"
+#include "solver/util/fileio.h"
 #include "cuda/cuda_kernel.h"
 #include "solver/gpu/cuda/cu_solver.h"
 #include "mock_gpu.h"
 
+
+#ifdef TEST_DATA_DIR
+#define DATA_DIR TEST_DATA_DIR
+#else
+#define DATA_DIR "NO_FILE"
+#endif
+
+
+namespace fs = std::experimental::filesystem;
 using namespace std;
 using namespace telef::solver;
 using namespace testing;
 
+
+TEST(GPUSolverTest_cuda, initLambda) {
+
+    float tau = 1.f;
+
+    float hessian[16] = {10.2631, 3.2631, -4.2631, -1.2631,
+                         4.77069, -0.439377, 2.42385, 1.70211,
+                         1.22791, 0.2099, 11.22542, -1.5641,
+                         -4.9164, -1.0523, 1.2631, 3.2631 };
+    float* hessian_d;
+    float* lambda_d;
+    SOLVER_CUDA_ALLOC_AND_ZERO(&lambda_d, static_cast<size_t >(1));
+    SOLVER_CUDA_ALLOC_AND_COPY(&hessian_d, hessian, static_cast<size_t >(16));
+
+    initialize_lambda(lambda_d, tau, hessian_d, 4);
+
+    float lambda;
+    cudaMemcpy(&lambda, lambda_d, sizeof(float), cudaMemcpyDeviceToHost);
+
+    float real_lambda = 11.22542;
+
+    float ferr = 1e-3;
+    EXPECT_THAT(lambda, FloatNear(real_lambda, ferr));
+
+    cudaFree(hessian_d);
+    cudaFree(lambda_d);
+}
 
 TEST_F(GPUSolverTestSimple, solve1) {
 //    solver->options.max_iterations = 500;
@@ -56,78 +94,6 @@ TEST_F(GPUSolverTest, solve2) {
     EXPECT_THAT(params,
                 Pointwise(FloatNear(ferr), real_fit_params));
 
-}
-
-TEST_F(BealesTest, solve2) {
-    solver->options.initial_dampening_factor = 1e-3;
-    solver->options.verbose = true;
-
-    Status  status = solver->solve(problem);
-
-    EXPECT_TRUE(Status::CONVERGENCE == status);
-
-    vector<float> real_fit_params = {3, 0.5};
-
-    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
-    // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
-//    vector<float> real_fit_params = {-2.60216, 0.0318891};
-
-    float ferr = 1e-3;
-    EXPECT_THAT(params,
-                Pointwise(FloatNear(ferr), real_fit_params));
-
-}
-
-TEST_F(SchwefelTest, solve) {
-    // For large residuals using many parameters, we should use 100% of the initial dampening factor
-    solver->options.initial_dampening_factor = 1;
-    solver->options.gradient_tolerance = 1e-20;
-    solver->options.step_tolerance = 1e-20;
-    solver->options.verbose = true;
-
-    Status  status = solver->solve(problem);
-
-    EXPECT_TRUE(Status::CONVERGENCE == status);
-
-    vector<float> real_fit_params(n, 420.968746f);
-
-    // Cannot solve at higher precision due to floating point error?
-    float ferr = 1e-1;
-    EXPECT_THAT(params,
-                Pointwise(FloatNear(ferr), real_fit_params));
-
-}
-
-TEST_F(PowellTest, solve) {
-    // PowellTest minimizes Powell's singular function.
-    //
-    //   F = 1/2 (f1^2 + f2^2 + f3^2 + f4^2)
-    //
-    //   f1(x1,x2) = x1 + 10*x2;
-    //   f2(x3,x4) = sqrt(5) * (x3 - x4)
-    //   f3(x2,x3) = (x2 - 2*x3)^2
-    //   f4(x1,x4) = sqrt(10) * (x1 - x4)^2
-    //
-    // The starting values are x1 = 3, x2 = -1, x3 = 0, x4 = 1.
-    // The minimum is 0 at (x1, x2, x3, x4) = 0.
-    // Reference to Ceres Powell example program for comparison
-
-    solver->options.initial_dampening_factor = 1;
-//    solver->options.gradient_tolerance = 1e-20;
-//    solver->options.step_tolerance = 1e-20;
-    solver->options.verbose = true;
-
-    Status  status = solver->solve(problem);
-
-    EXPECT_TRUE(Status::CONVERGENCE == status);
-
-    float actual[4] = {x1, x2, x3, x4};
-    vector<float> real_fit_params(4, 0.f);
-
-//    float ferr = 1e-5;
-    float ferr = 1e-3;
-    EXPECT_THAT(actual,
-                Pointwise(FloatNear(ferr), real_fit_params));
 }
 
 TEST_F(GPUSolverMultiParam, MultiParams) {
@@ -215,6 +181,122 @@ TEST_F(GPUSolverMultiResidualImplicit, MultiObjectiveImplicitShared) {
                 Pointwise(FloatNear(ferr), real_fit_params1));
 
 }
+
+
+
+TEST_F(BealesTest, solve2) {
+    solver->options.initial_dampening_factor = 1e-3;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    vector<float> real_fit_params = {3, 0.5};
+
+    // Actual Ceres minimizad params, but this is a sinosoidal and can have multiple minimums
+    // the above is equivilat in error (22.5000 = .5*lse) and the result our minimizer results to.
+//    vector<float> real_fit_params = {-2.60216, 0.0318891};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(params,
+                Pointwise(FloatNear(ferr), real_fit_params));
+
+}
+
+TEST_F(SchwefelTest, solve) {
+    // For large residuals using many parameters, we should use 100% of the initial dampening factor
+    solver->options.initial_dampening_factor = 1;
+    solver->options.gradient_tolerance = 1e-20;
+    solver->options.step_tolerance = 1e-20;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    vector<float> real_fit_params(n, 420.968746f);
+
+    // Cannot solve at higher precision due to floating point error?
+    float ferr = 1e-1;
+    EXPECT_THAT(params,
+                Pointwise(FloatNear(ferr), real_fit_params));
+
+}
+
+TEST_F(PowellTest, solve) {
+    // PowellTest minimizes Powell's singular function.
+    //
+    //   F = 1/2 (f1^2 + f2^2 + f3^2 + f4^2)
+    //
+    //   f1(x1,x2) = x1 + 10*x2;
+    //   f2(x3,x4) = sqrt(5) * (x3 - x4)
+    //   f3(x2,x3) = (x2 - 2*x3)^2
+    //   f4(x1,x4) = sqrt(10) * (x1 - x4)^2
+    //
+    // The starting values are x1 = 3, x2 = -1, x3 = 0, x4 = 1.
+    // The minimum is 0 at (x1, x2, x3, x4) = 0.
+    // Reference to Ceres Powell example program for comparison
+
+    solver->options.initial_dampening_factor = 1e-1;
+    solver->options.gradient_tolerance = 1e-20;
+    solver->options.step_tolerance = 1e-20;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    float actual[4] = {x1, x2, x3, x4};
+    vector<float> real_fit_params(4, 0.f);
+
+//    float ferr = 1e-5;
+    float ferr = 1e-3;
+    EXPECT_THAT(actual,
+                Pointwise(FloatNear(ferr), real_fit_params));
+}
+
+TEST(fileIO, parseCSV) {
+    std::vector<float> targetPoints;
+    fs::path dir (DATA_DIR);
+    fs::path file ("/rigidFit/targetPoints.data");
+    fs::path full_path = dir/file;
+    telef::solver::io::parseCSVFile(targetPoints, full_path);
+
+//    std::cout << "File("<< full_path <<") Contents: " << std::endl;
+//    for (auto i = targetPoints.begin(); i != targetPoints.end(); ++i){
+//        std::cout << "\t" << *i << std::endl;
+//    }
+    const int actual_size = 58*3;
+
+    ASSERT_EQ(targetPoints.size(), actual_size);
+
+}
+
+//TEST_F(RigidFitTest, solve) {
+//    // Fit Quartonian Rotation and Translation using actual face landmarks
+//    // Target: detected 3D landmarks
+//    // Source: landmarks from annotated Face model
+//    // Actuals: Ceres results fitting the same data
+//
+//    solver->options.initial_dampening_factor = 1e-1;
+//    solver->options.gradient_tolerance = 1e-20;
+//    solver->options.step_tolerance = 1e-20;
+//    solver->options.verbose = true;
+//
+//    Status  status = solver->solve(problem);
+//
+//    EXPECT_TRUE(Status::CONVERGENCE == status);
+//
+//    float actual_U[3] = {3.50248, 0.00739, 0.01075};
+//    float actual_T[3] = {0.09495, 0.09297, 0.10206};
+//    vector<float> real_fit_params(4, 0.f);
+//
+////    float ferr = 1e-5;
+//    float ferr = 1e-3;
+//    EXPECT_THAT(actual,
+//                Pointwise(FloatNear(ferr), real_fit_params));
+//}
 
 //
 //TEST(GPUSolverTest_cuda, calcError) {
