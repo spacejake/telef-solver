@@ -174,14 +174,14 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
     // grid-striding loop
     for (int i = start_index; i < nParams; i += stride) {
         int diagonal_index = i+nParams*i;
-//        hessians[diagonal_index] += lambda[0];
+        hessians[diagonal_index] += lambda[0];
 
         // Lambda scaled by hessian, 0. diagnals will result in failed positive def. test, no way to escape!! but can be faster??
 //        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0];
 
 
         // expariment??? at times, can converge faster than original LM
-        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0] + lambda[0];
+//        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0] + lambda[0];
 
         /* GPU Fit update code
         if (goodStep)
