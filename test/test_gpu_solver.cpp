@@ -414,7 +414,7 @@ TEST_F(PowellTest, solve) {
 TEST(fileIO, parseCSV) {
     std::vector<float> targetPoints;
     fs::path dir (DATA_DIR);
-    fs::path file ("/rigidFit/targetPoints.data");
+    fs::path file ("/rigidFit/actualPoints.data");
     fs::path full_path = dir/file;
     telef::solver::io::parseCSVFile(targetPoints, full_path);
 
