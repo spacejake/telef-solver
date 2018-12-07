@@ -5,11 +5,17 @@ include_directories("${PROJECT_SOURCE_DIR}")
 set( cudaTestHdr
         "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_powell.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_quaternion.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_align.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_loss.h"
         )
 
 set( cudaTestSrc
         "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_kernel.cu"
         "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_powell.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_quaternion.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_align.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cuda/cuda_loss.cu"
         )
 
 #source_group("Interface Header Files" FILES ${interfaceHdr})
@@ -31,6 +37,7 @@ target_sources(${PROJECT_NAME}
     "${CMAKE_CURRENT_SOURCE_DIR}/mock_gpu.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mock_gpu.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mock_powell.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mock_rigid.cpp"
 
     ${cudaTestHdr}
     ${cudaTestSrc}

@@ -273,30 +273,30 @@ TEST(fileIO, parseCSV) {
 
 }
 
-//TEST_F(RigidFitTest, solve) {
-//    // Fit Quartonian Rotation and Translation using actual face landmarks
-//    // Target: detected 3D landmarks
-//    // Source: landmarks from annotated Face model
-//    // Actuals: Ceres results fitting the same data
-//
-//    solver->options.initial_dampening_factor = 1e-1;
-//    solver->options.gradient_tolerance = 1e-20;
-//    solver->options.step_tolerance = 1e-20;
-//    solver->options.verbose = true;
-//
-//    Status  status = solver->solve(problem);
-//
-//    EXPECT_TRUE(Status::CONVERGENCE == status);
-//
-//    float actual_U[3] = {3.50248, 0.00739, 0.01075};
-//    float actual_T[3] = {0.09495, 0.09297, 0.10206};
-//    vector<float> real_fit_params(4, 0.f);
-//
-////    float ferr = 1e-5;
-//    float ferr = 1e-3;
-//    EXPECT_THAT(actual,
-//                Pointwise(FloatNear(ferr), real_fit_params));
-//}
+TEST_F(RigidFitTest, solve) {
+    // Fit quaternions Rotation and Translation using actual face landmarks
+    // Target: detected 3D landmarks
+    // Source: landmarks from annotated Face model
+    // Actuals: Ceres results fitting the same data
+
+    solver->options.initial_dampening_factor = 2;
+    solver->options.gradient_tolerance = 1e-20;
+    solver->options.step_tolerance = 1e-20;
+    solver->options.verbose = true;
+
+    Status  status = solver->solve(problem);
+
+    EXPECT_TRUE(Status::CONVERGENCE == status);
+
+    float actual_T[3] = {0.09495, 0.09297, 0.10206};
+    float actual_U[3] = {3.50248, 0.00739, 0.01075};
+
+    float ferr = 1e-3;
+    EXPECT_THAT(result_T,
+                Pointwise(FloatNear(ferr), actual_T));
+    EXPECT_THAT(result_U,
+                Pointwise(FloatNear(ferr), actual_U));
+}
 
 //
 //TEST(GPUSolverTest_cuda, calcError) {

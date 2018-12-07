@@ -61,7 +61,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         status = Status::CONVERGENCE;
         if (options.verbose) {
             std::stringstream logmsg;
-            logmsg << "Convergence occured in initial step.";
+            logmsg << "CONVERGENCE: occured in initial step. Gradient less than "
+                      "tolerace:" << options.gradient_tolerance;
             std::cout << logmsg.str() << std::endl;
         }
     } else {
@@ -108,9 +109,15 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         // convergence reached if ||h_lm|| ≤ ε_2 (||x|| + ε_2)
         if( solveSystemSuccess && evaluateStep(problem, options.step_tolerance) ) {
             status = Status::CONVERGENCE;
+
+            if (options.verbose) {
+                std::stringstream logmsg;
+                logmsg << "CONVERGENCE: Cannot calculate step with magnitude greater than "
+                          "tolerace:" << options.step_tolerance;
+                std::cout << logmsg.str() << std::endl;
+            }
             // Save parameters?
             good_iteration = false;
-//            printf("CONVERGENCE: Cannot compute new delta");
         } else if (solveSystemSuccess) {
             // Update Params
             for (auto resFunc : residualFuncs) {
@@ -196,7 +203,12 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             // Convergence achieved?
             if (evaluateGradient(problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)) {
                 status = Status::CONVERGENCE;
-//                printf("CONVERGENCE: minimum reached");
+                if (options.verbose) {
+                    std::stringstream logmsg;
+                    logmsg << "CONVERGENCE: Gradient less than "
+                              "tolerace:" << options.gradient_tolerance;
+                    std::cout << logmsg.str() << std::endl;
+                }
             } else {
                 // for next iteration, we should recalculate the 2-norm of our best fitted parameters
                 calcParams2Norm(problem->getParams2Norm(), problem);
