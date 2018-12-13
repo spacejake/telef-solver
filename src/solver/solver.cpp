@@ -296,6 +296,10 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         logmsg << "\tFinal Error:\t"  << error << std::endl;
         logmsg << "\tTotal Change:\t" << error-init_error << std::endl;
 
+        logmsg << std::endl << "\tInitial Gradient:\t"  << init_norm_inf_grad << std::endl;
+        logmsg << "\tFinal Gradient:\t"  << norm_inf_grad << std::endl;
+        logmsg << "\tTotal Change:\t" << norm_inf_grad-init_norm_inf_grad << std::endl;
+
         logmsg << std::defaultfloat << std::setprecision(4);
         logmsg << "\nTime: (in Seconds)" << std::endl;
         // Convert ns to seconds
