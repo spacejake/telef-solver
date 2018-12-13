@@ -177,13 +177,15 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
         hessians[diagonal_index] += lambda[0];
 
         // Lambda scaled by hessian, 0. diagnals will result in failed positive def. test, no way to escape!! but can be faster??
+//        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0] + 1e-6;
 //        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0];
 
 
         // expariment??? at times, can converge faster than original LM
 //        hessians[diagonal_index] += hessians[diagonal_index] * lambda[0] + lambda[0];
 
-        /* GPU Fit update code
+        //GPU Fit update code
+        /*
         if (goodStep)
         {
             hessians[diagonal_index] -= dampeningFactors[i] * lambda[0] / 10.;
@@ -201,7 +203,8 @@ void _update_hessians(float *hessians, float *dampeningFactors, float *lambda, i
         //    scaling_vector[parameter_index] = hessian[diagonal_index];
 
         hessians[diagonal_index] += dampeningFactors[i] * lambda[0];
-        */
+         */
+
 
 //        printf("_update_hessians:hessians[%d][%d]: %.4f\n",i, i, hessians[diagonal_index]);
     }

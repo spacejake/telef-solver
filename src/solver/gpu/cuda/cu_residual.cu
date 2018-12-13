@@ -4,7 +4,7 @@
 
 
 void calc_gradients(cublasHandle_t cublasHandle, float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {
-    //Compute -g(x) + global_G(x)
+    //Compute g(x) + global_G(x)
     cudaMatMul_ATxB(cublasHandle, gradients, jacobians, nRes, nParams, residuals, nRes, 1, 1.0f, 1.0f);
 }
 

@@ -45,7 +45,7 @@ namespace telef::solver {
                     calcGradients(getGradient()+paramBlock->getOffset(),
                                   paramBlock->getJacobians(), residualBlock->getResiduals(),
                                   residualBlock->numResiduals(), paramBlock->numParameters());
-                    //print_array("computeDerivatives::Gradient", getGradient(), numEffectiveParams());
+//                    print_array("computeDerivatives::Gradient", getGradient(), numEffectiveParams());
 
                 }
             }
