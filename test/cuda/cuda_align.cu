@@ -8,6 +8,12 @@
 #include "solver/util/cudautil.h"
 
 #define BLOCKSIZE 128
+namespace {
+    const int NUM_THREAD = 512;
+    const int DIM_X_THREAD = 16;
+    const int DIM_Y_THREAD = 16;
+}
+
 
 __global__
 void _calculatePointLoss(float *residuals, const float *data, const float *target, const int nRes) {
@@ -16,7 +22,8 @@ void _calculatePointLoss(float *residuals, const float *data, const float *targe
 
     // grid-striding loop
     for (int i = start_index; i < nRes; i += stride) {
-        residuals[i] = target - data;
+        residuals[i] = target[i] - data[i];
+        //printf("residuals[%d]: %.5f = %.5f - %.5f\n", i, residuals[i], )
     }
 }
 
@@ -26,6 +33,9 @@ void calculatePointLoss(float *residuals, const float *data, const float *target
 
     _calculatePointLoss << < dimGrid, dimBlock >> > (residuals, data, target, nRes);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
+//    scale_array<<<SOLVER_GET_DIM_GRID(nRes, NUM_THREAD), NUM_THREAD>>>
+//                (residuals, nRes, 1.0f/sqrtf(nRes/3));
+//    SOLVER_CHECK_ERROR_MSG("Kernel Error");
 }
 
 __global__
@@ -139,7 +149,7 @@ void alignPoints(cublasHandle_t cnpHandle, float* align_d, const float* source_d
     float *trans_d;
     SOLVER_CUDA_CHECK(cudaMalloc((void **) &trans_d, 16*sizeof(float)));
 
-    convertQtoTrans(trans_d, t, u);
+    convertQtoTrans(trans_d, u, t);
 
     applyRigidAlignment(cnpHandle, align_d, source_d, trans_d, pointCount);
 }

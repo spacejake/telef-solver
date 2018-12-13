@@ -11,6 +11,17 @@ namespace {
     const int DIM_Y_THREAD = 16;
 }
 
+
+template<typename T>
+__global__
+void scale_array(T *array_d, int size, float scale) {
+    const int start = blockDim.x * blockIdx.x + threadIdx.x;
+    const int step = gridDim.x * blockDim.x;
+    for (int i=start; i<size; i+=step) {
+        array_d[i] *= scale;
+    }
+}
+
 __global__
 void _calc_dx_m_dt_lmk(float *dx_m_dt, const int num_points) {
     const int x_start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -78,7 +89,7 @@ void calc_de_du_lmk(float *de_du_d, const float *u_d, const float *source_d, con
     dim3 dimBlock(DIM_X_THREAD, DIM_Y_THREAD);
     _calc_dx_m_du_lmk<<<dimGrid, dimBlock>>>(de_du_d, u_d, source_d, pointCount);
     SOLVER_CHECK_ERROR_MSG("Kernel Error");
-//    scale_array<<<SOLVER_GET_DIM_GRID(3*3*point_pair.point_count, NUM_THREAD),NUM_THREAD>>>
-//                   (de_du_d, point_pair.point_count*3*3, weight*1.0f/sqrtf(point_pair.point_count));
+//    scale_array<<<SOLVER_GET_DIM_GRID(3*3*pointCount, NUM_THREAD),NUM_THREAD>>>
+//                   (de_du_d, pointCount*3*3, weight*1.0f/sqrtf(pointCount));
 //    SOLVER_CHECK_ERROR_MSG("Kernel Error");
 }

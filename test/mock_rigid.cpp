@@ -93,14 +93,18 @@ void RigidFitCostFunction::evaluate(ResidualBlock::Ptr residualBlock) {
     auto fuParams = residualBlock->getParameterBlocks()[1];
 
     float* residuals_d = residualBlock->getResiduals();
-    int pointCount = residualBlock->numResiduals();
+    int pointCount = residualBlock->numResiduals()/3;
 
     auto ft = ftParams->getParameters();
     auto fu = fuParams->getParameters();
+//    print_array("source", source_d, residualBlock->numResiduals());
     alignPoints(cublasHandle, fitted_d, source_d, ft, fu, pointCount);
+//    print_array("fitted", fitted_d, residualBlock->numResiduals());
+//    print_array("target", target_d, residualBlock->numResiduals());
 
     SOLVER_CUDA_ZERO(&residuals_d, static_cast<size_t>(pointCount));
-    calculatePointLoss(residuals_d, fitted_d, target_d, pointCount);
+    calculatePointLoss(residuals_d, fitted_d, target_d, residualBlock->numResiduals());
+//    print_array("residuals", residuals_d, residualBlock->numResiduals());
 }
 
 void RigidFitCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock) {
@@ -118,7 +122,9 @@ void RigidFitCostFunction::computeJacobians(telef::solver::ResidualBlock::Ptr re
 
     SOLVER_CUDA_CHECK(cudaMemset(ftJacobian_d, 0, numtj*sizeof(float)));
     SOLVER_CUDA_CHECK(cudaMemset(fuJacobian_d, 0, numuj*sizeof(float)));
-    calculateJacobians(ftJacobian_d, fuJacobian_d, fu, source_d, pointCount);
+    calculateJacobians(ftJacobian_d, fuJacobian_d, fu, source_d, pointCount/3.f);
 
+//    print_array("Jacobians_T", ftJacobian_d, numtj);
+//    print_array("Jacobians_U", fuJacobian_d, numuj);
 }
 //RigidFitCostFunction END

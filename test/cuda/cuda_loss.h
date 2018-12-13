@@ -16,6 +16,11 @@
 //    int point_count;
 //} PointPair;
 
+
+template<typename T>
+__global__
+void scale_array(T *array_d, int size, float scale);
+
 /**
  * Calculate
  *

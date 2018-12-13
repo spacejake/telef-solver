@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include "cuda_quaternion.h"
 
 #define EPS 1e-6
@@ -44,6 +45,11 @@ void calc_trans_from_tr(float *trans, const float *t, const float *r) {
     trans[3] = 0;
     trans[7] = 0;
     trans[11] = 0;
+
+//    for (int i = 0; i < 4; i++){
+//        printf("[ %.5f %.5f %.5f %.5f ]\n",
+//                trans[i],trans[4+i],trans[2*4+i],trans[3*4+i]);
+//    }
 }
 
 __device__ __host__
