@@ -434,7 +434,7 @@ TEST_F(RigidFitTest, solve) {
     // Source: landmarks from annotated Face model
     // Actuals: Ceres results fitting the same data
 
-    solver->options.initial_dampening_factor = 1;
+    solver->options.initial_dampening_factor = 1e-3;
     solver->options.gradient_tolerance = 1e-20;
     solver->options.step_tolerance = 1e-20;
     solver->options.verbose = true;
