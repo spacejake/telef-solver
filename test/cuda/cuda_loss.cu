@@ -3,7 +3,7 @@
 
 #include "cuda_loss.h"
 #include "cuda_quaternion.h"
-#include "util/cudautil.h"
+#include "solver/util/cudautil.h"
 
 namespace {
     const int NUM_THREAD = 512;

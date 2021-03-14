@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "solver/gpu/cuda/cu_resudual.h"
+#include "solver/gpu/cuda/cu_residual.h"
 
 
 void calc_gradients(cublasHandle_t cublasHandle, float *gradients, float *jacobians, float *residuals, int nRes, int nParams) {

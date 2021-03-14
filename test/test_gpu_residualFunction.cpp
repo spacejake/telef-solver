@@ -9,7 +9,7 @@
 
 #include "mock_gpu.h"
 
-#include "solver/gpu/cuda/cu_resudual.h"
+#include "solver/gpu/cuda/cu_residual.h"
 
 
 using namespace std;

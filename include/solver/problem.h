@@ -91,7 +91,7 @@ namespace telef::solver {
 //            print_array("calculateHessianBlock::Hessian::Done", getHessian(), nEffectiveParams*nEffectiveParams);
         }
 
-        float setError(float error_) {
+        void setError(float error_) {
             error = error_;
         }
 

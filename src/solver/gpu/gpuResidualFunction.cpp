@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "solver/gpu/gpuResidualFunction.h"
-#include "solver/gpu/cuda/cu_resudual.h"
+#include "solver/gpu/cuda/cu_residual.h"
 
 using namespace telef::solver;
 

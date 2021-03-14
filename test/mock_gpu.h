@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cublas_v2.h>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include <solver/gpu/gpuSolver.h>
 #include <solver/gpu/gpuProblem.h>

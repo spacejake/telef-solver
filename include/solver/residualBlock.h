@@ -19,7 +19,7 @@ namespace telef::solver {
 
 //        virtual void initialize() = 0;
 
-        float setError(float error_) {
+        void setError(float error_) {
             error = error_;
         };
 

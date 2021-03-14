@@ -50,7 +50,7 @@ namespace telef::solver {
 
         int getOffset() const {
             if (isShared()){
-                shared_parameter->getOffset();
+                return shared_parameter->getOffset();
             }
             else {
                 return offset;
