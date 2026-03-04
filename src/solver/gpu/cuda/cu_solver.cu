@@ -7,7 +7,6 @@
 #include <cuda_runtime.h>
 //#include <cooperative_groups.h>
 #include <cublas_v2.h>
-#include <cusolver_common.h>
 #include <cusolverDn.h>
 
 #include "solver/gpu/cuda/cu_solver.h"
