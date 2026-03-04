@@ -6,6 +6,7 @@
 
 #include "solver/util/cudautil.h"
 #include "solver/util/fileio.h"
+#include "solver/manifolds/axis_angle_parameterization.h"
 #include "cuda/cuda_align.h"
 
 #ifdef TEST_DATA_DIR
@@ -86,6 +87,10 @@ RigidFitCostFunction::~RigidFitCostFunction() {
     SOLVER_CUDA_FREE(source_d);
     SOLVER_CUDA_FREE(target_d);
     SOLVER_CUDA_FREE(fitted_d);
+}
+
+std::vector<telef::solver::LocalParameterization::Ptr> RigidFitCostFunction::getParameterBlockLocalParameterizations() const {
+    return { nullptr, std::make_shared<telef::solver::AxisAngleParameterization>() };  // translation Euclidean, rotation SO(3) axis-angle
 }
 
 void RigidFitCostFunction::evaluate(ResidualBlock::Ptr residualBlock) {

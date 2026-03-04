@@ -30,6 +30,9 @@ namespace telef::solver {
             SOLVER_CUDA_FREE(gradients);
             SOLVER_CUDA_FREE(hessian);
             SOLVER_CUDA_FREE(hessianLowTri);
+            SOLVER_CUDA_FREE(scaleBuffer);
+            SOLVER_CUDA_FREE(trustRadius);
+            SOLVER_CUDA_FREE(auxBuffer);
         }
 
         void setCublasHandle(cublasHandle_t cublasHandle_){
@@ -77,6 +80,10 @@ namespace telef::solver {
             return hessianLowTri;
         }
 
+        virtual float* getScaleBuffer() override { return scaleBuffer; }
+        virtual float* getTrustRadius() override { return trustRadius; }
+        virtual float* getAuxBuffer() override { return auxBuffer; }
+
         /**
          * compute and allocate size for global matrices
          * Call befor running solver or when the Problem space has been modified, i.e. add more ResidualBlocks
@@ -95,6 +102,9 @@ namespace telef::solver {
 
             SOLVER_CUDA_ALLOC_AND_ZERO(&hessian, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
             SOLVER_CUDA_ALLOC_AND_ZERO(&hessianLowTri, static_cast<size_t>(nEffectiveParams * nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&scaleBuffer, static_cast<size_t>(nEffectiveParams));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&trustRadius, static_cast<size_t>(1));
+            SOLVER_CUDA_ALLOC_AND_ZERO(&auxBuffer, static_cast<size_t>(nEffectiveParams));
         }
 
 
@@ -114,7 +124,8 @@ namespace telef::solver {
         }
 
         virtual ResidualFunction::Ptr createResidualFunction(CostFunction::Ptr costFunc_) {
-            auto resBlock = std::make_shared<GPUResidualBlock>(costFunc_->numResiduals(), costFunc_->getParameterSizes());
+            auto localParams = costFunc_->getParameterBlockLocalParameterizations();
+            auto resBlock = std::make_shared<GPUResidualBlock>(costFunc_->numResiduals(), costFunc_->getParameterSizes(), localParams);
             return std::make_shared<GPUResidualFunction>(costFunc_, resBlock);
         }
 
@@ -136,6 +147,9 @@ namespace telef::solver {
         float* gradients;
         float* hessian;
         float* hessianLowTri;
+        float* scaleBuffer;
+        float* trustRadius;
+        float* auxBuffer;
 
     };
 }

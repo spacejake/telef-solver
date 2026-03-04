@@ -54,6 +54,7 @@ add_definitions ( -DTEST_DATA_DIR=\"${CMAKE_SOURCE_DIR}/test/data\")
 ############## Define headers and sourcse ################
 set( interfaceHdr
         include/solver/costFunction.h
+        include/solver/lossFunction.h
         include/solver/solver.h
         include/solver/residualBlock.h
         include/solver/residualFunction.h

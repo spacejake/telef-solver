@@ -1,7 +1,9 @@
 #pragma once
 
 #include <assert.h>
+#include <memory>
 #include "solver/residualBlock.h"
+#include "solver/localParameterization.h"
 
 namespace telef::solver {
 //    using Parameters = struct Parameters {
@@ -92,6 +94,10 @@ namespace telef::solver {
                 return paramBlockIndex;
             }
         }
+
+        /** Optional manifold; null = Euclidean update (x + delta) in core solver. */
+        virtual LocalParameterization::Ptr getLocalParameterization() const { return nullptr; }
+        virtual void setLocalParameterization(LocalParameterization::Ptr p) { (void)p; }
 
         void setParamBlockIndex(int idx){
             if (isShared()){

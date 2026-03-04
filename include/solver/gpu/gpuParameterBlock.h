@@ -1,7 +1,8 @@
 #pragma once
 
-#include "solver/parameterBlock.h"
+#include <cstdlib>
 
+#include "solver/parameterBlock.h"
 #include "solver/util/cudautil.h"
 
 namespace telef::solver {
@@ -11,8 +12,16 @@ namespace telef::solver {
         using ConstPtr = std::shared_ptr<const GPUParameterBlock>;
 
         GPUParameterBlock(const int nRes, const int nParams)
-                : ParameterBlock(nRes, nParams) {
+                : ParameterBlock(nRes, nParams), hostBuffer(nullptr) {
             initDeviceMemory();
+        }
+
+        LocalParameterization::Ptr getLocalParameterization() const override { return localParam; }
+        void setLocalParameterization(LocalParameterization::Ptr p) override {
+            if (hostBuffer) { free(hostBuffer); hostBuffer = nullptr; }
+            localParam = std::move(p);
+            if (localParam && !isShared())
+                hostBuffer = (float*)malloc(3 * static_cast<size_t>(numParameters()) * sizeof(float));
         }
 
         virtual ~GPUParameterBlock(){
@@ -20,6 +29,7 @@ namespace telef::solver {
             if (bestParameters) SOLVER_CUDA_FREE(bestParameters);
             if (jacobians) SOLVER_CUDA_FREE(jacobians);
             if (gradients) SOLVER_CUDA_FREE(gradients);
+            if (hostBuffer) free(hostBuffer);
         }
 
 
@@ -80,7 +90,12 @@ namespace telef::solver {
             //SOLVER_CUDA_FREE(bestParameters);
         }
 
+        /** Used by solver to run Plus() on host when LocalParameterization is set. Layout: [state, delta, state_plus] each nParams. */
+        float* getHostBufferForPlus() { return hostBuffer; }
+
     private:
+        LocalParameterization::Ptr localParam;
+        float* hostBuffer;   // 3 * nParameters for Plus(state, delta, state_plus) host copy
         float* parameters;
         float* bestParameters;
 

@@ -38,6 +38,7 @@ namespace telef::solver {
 
             for (auto resFunc : residualFuncs) {
                 resFunc->computeJacobians();
+                resFunc->applyLoss();
                 auto residualBlock = resFunc->getResidualBlock();
                 auto ParamBlocks  = residualBlock->getParameterBlocks();
                 for (ParameterBlock::Ptr paramBlock : ParamBlocks) {
@@ -111,7 +112,7 @@ namespace telef::solver {
             auto nParams = paramBlock.size();
             assert(nParams == params_.size() && "Residual Function with different number of parameters");
 
-            for (int idx; idx < nParams; idx++) {
+            for (size_t idx = 0; idx < nParams; idx++) {
 
                 auto elem = parameterOwners.insert(std::make_pair(params_[idx], paramBlock[idx]));
 
@@ -265,6 +266,15 @@ namespace telef::solver {
          * @return
          */
         virtual float* getHessianLowTri() = 0;
+
+        /** Optional scale buffer (nParams) for Jacobi/diag(H) scaling. Null if scaling disabled. */
+        virtual float* getScaleBuffer() { return nullptr; }
+
+        /** Trust region radius for DOGLEG; read/write. Null if not used. */
+        virtual float* getTrustRadius() { return nullptr; }
+
+        /** Aux buffer (nParams) for H*delta, dogleg, etc. Null if not used. */
+        virtual float* getAuxBuffer() { return nullptr; }
 
     protected:
         //Computed during initilization, after all functions and parameters defined

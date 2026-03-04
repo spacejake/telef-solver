@@ -1,7 +1,7 @@
 #pragma once
 
 #include "solver/costFunction.h"
-
+#include "solver/lossFunction.h"
 
 namespace telef::solver {
     /**
@@ -24,6 +24,10 @@ namespace telef::solver {
 
         void evaluate();
         void computeJacobians();
+        /** Apply robust loss: scale residuals and Jacobian rows by sqrt(rho'(r^2)). Call after computeJacobians() before gradient/Hessian accumulation. */
+        virtual void applyLoss() {}
+        void setLossFunction(LossFunction::Ptr loss) { lossFunction = std::move(loss); }
+        LossFunction::Ptr getLossFunction() const { return lossFunction; }
 
 //        void initParams(std::vector<float*> initParams) {
 //            residualBlock->initParams(initParams);
@@ -43,7 +47,7 @@ namespace telef::solver {
 
     protected:
         CostFunction::Ptr costFunction;
-        //TODO:: LossFunction::Ptr lossFunction;
+        LossFunction::Ptr lossFunction;
         ResidualBlock::Ptr residualBlock;
         float weight;
     };

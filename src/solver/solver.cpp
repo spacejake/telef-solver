@@ -42,7 +42,8 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
     PROFILE_END(init);
     auto init_time = PROFILE_GET(init);
 
-    //loop through each cost function, initialize all memory with results from given starting params
+    // loop through each cost function, initialize all memory with results from given starting params
+    // Evaluate residuals r(x) and derivatives (J, H=J'J, g=J'r) at initial x. Cost f(x) = ½||r||².
     residual_Ttime += PROFILE(
             problem->evaluate(););
 
@@ -57,6 +58,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         init_error += block_error;
     }
 
+    // First-order optimality: ||∇f||_∞ = ||J'r||_∞ small ⇒ near stationary point (necessary for min).
     float init_norm_inf_grad = 0;
     if (evaluateGradient(init_norm_inf_grad, problem->getGradient(), problem->numEffectiveParams(), options.gradient_tolerance)){
         status = Status::CONVERGENCE;
@@ -67,7 +69,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             std::cout << logmsg.str() << std::endl;
         }
     } else {
-        // lambda = tau * max(Diag(Initial_Hessian))
+        // Initialize LM damping: λ = τ * max(diag(H)). Ref: Madsen et al. "Methods for non-linear least squares".
         initializeLambda(problem->getLambda(), options.initial_dampening_factor,
                 problem->getHessian(), problem->numEffectiveParams());
 
@@ -99,25 +101,30 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         bool good_step = true; // Determine if all steps are good across parameter and residual blocks
         bool good_iteration = false; // Is this iteration good (better fit than best fit)
 
-        // TODO: Parallelize?
-        //if good_step, update 1+lambda
-        //else, update with (1 + lambda * up) / (1 + lambda)
-        updateHessians(problem->getHessian(), problem->getDampeningFactors(), problem->getLambda(),
-                       problem->numEffectiveParams(), prev_good_iteration);
+        // --- LM: Form damped normal equations (H + damping)*Δ = -g ---
+        // Only for DAMPED_LM: we add λI or λ·diag(H) to H so the step is (H+damping)^{-1}(-g).
+        // For DOGLEG we use raw H (with small diag floor) and a trust-region step instead.
+        if (options.step_type == StepType::DAMPED_LM) {
+            updateHessians(problem->getHessian(), problem->getDampeningFactors(), problem->getLambda(),
+                          problem->numEffectiveParams(), prev_good_iteration,
+                          options.damping_type, options.diag_floor_epsilon);
+        }
 
-        // Solves delta = -(H(x) + lambda * I)^-1 * g(x), x+1 = x + delta
-
+        // --- Solve for the step Δ: (H + damping)*Δ = -g (LM) or dogleg step inside trust region ---
+        // Theory: LM minimizes the local quadratic model m(Δ)=f(x)+g'Δ + ½Δ'HΔ; damping ensures
+        // H+damping is pos. def. and controls step size. Ref: Madsen et al. "Methods for non-linear least squares".
         PROFILE_START(linear_solver);
         bool solveSystemSuccess = solveSystem(problem->getDeltaParameters(), problem->getHessianLowTri(),
                 problem->getHessian(), problem->getGradient(),
-                problem->numEffectiveParams());
+                problem->numEffectiveParams(), problem->getScaleBuffer(),
+                options.step_type, problem->getTrustRadius(), problem->getAuxBuffer());
         PROFILE_END(linear_solver);
         linSolver_Ttime += PROFILE_GET(linear_solver);
 
-        // Check if decompsition results in a symmetric positive-definite matrix
-        // If the system of equations failed to be evaluated with current step, make another step and try again.
+        // Cholesky can fail if matrix is not positive definite; then we retry with different λ next iteration.
 
-        // convergence reached if ||h_lm|| ≤ ε_2 (||x|| + ε_2)
+        // --- Step-size convergence: ||Δ|| ≤ ε₂(||x||+ε₂) means we are not moving much (local minimum) ---
+        // Ref: Madsen et al. termination criteria.
         if( solveSystemSuccess && evaluateStep(problem, options.step_tolerance) ) {
             status = Status::CONVERGENCE;
 
@@ -130,7 +137,7 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
             // Save parameters?
             good_iteration = false;
         } else if (solveSystemSuccess) {
-            // Update Params
+            // --- Tentative update: x_new = x + Δ (or manifold Plus for rotation, etc.) ---
             for (auto resFunc : residualFuncs) {
                 auto resBlock = resFunc->getResidualBlock();
                 auto paramBlocks = resBlock->getParameterBlocks();
@@ -140,13 +147,13 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                         updateParams(paramBlock->getParameters(),
                                      paramBlock->getBestParameters(),
                                      problem->getDeltaParameters() + paramBlock->getOffset(),
-                                     paramBlock->numParameters());
+                                     paramBlock->numParameters(),
+                                     paramBlock.get());
                     }
                 }
             }
 
-            // Evaluate step and new params
-            // if prev error was derr <= 0, don't do jacobian recalc
+            // --- Evaluate cost at x_new: f(x_new) = ½ Σ r_i^2 ---
             residual_Ttime += PROFILE(
                     problem->evaluate(););
 
@@ -158,26 +165,28 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
                 problemError += blockError;
             }
 
-            //TODO: Add Loss Funciton for each Resdidual Function, 0.5 * Loss(chi-squared-error or bloack error)
-            newError += 0.5 * problemError; //Compute Cost: 0.5 * chi-squared-error, as ceres does
+            // Cost = ½ * chi-squared (sum of squared residuals), as in Ceres and standard LM.
+            newError += 0.5 * problemError;
             iterDerr = newError - error;
-            //printf("BlockError:%.4f\n", blockError);
 
-            /* Compute Gain Ratio
-             * gainRatio = (error - newError)/(0.5*Delta^T (lambda * delta + -g))
-             *
-             * Gradient is computed as -g
-             * hlm garuntieed not be 0 because we check above, lambda cannot be 0
-             *
-             */
-            float gainRatio = computeGainRatio(problem->getPredictedGain(),
-                                               error, newError, problem->getLambda(),
-                                               problem->getDeltaParameters(), problem->getGradient(),
-                                               problem->numEffectiveParams());
-
-            //printf("GainRatio:%.4f\n", gainRatio);
-
-            good_iteration = gainRatio > options.gain_ratio_threashold;
+            // --- Step acceptance: trust-region ratio ρ = (actual reduction) / (predicted reduction) ---
+            // Theory: m(Δ) = f(x) + g'Δ + ½Δ'HΔ. Predicted reduction = m(0) - m(Δ) = -g'Δ - ½Δ'HΔ.
+            // ρ = (f(x)-f(x+Δ)) / (m(0)-m(Δ)). If ρ > threshold (e.g. 0.25) the quadratic model is
+            // trustworthy and we accept; else we reject and increase damping / shrink trust region.
+            if (options.use_rho_accept) {
+                float pred_red = computeModelReduction(problem->getDeltaParameters(), problem->getGradient(),
+                        problem->getHessian(), problem->numEffectiveParams(), problem->getAuxBuffer());
+                float actual_red = error - newError;
+                float rho = (pred_red > 1e-14f) ? (actual_red / pred_red) : 0.f;
+                good_iteration = rho > options.rho_accept_threshold;
+            } else {
+                // Legacy: gain ratio from LM (Nielsen 1999 style), denominator = 0.5*Δ'(λΔ - g).
+                float gainRatio = computeGainRatio(problem->getPredictedGain(),
+                        error, newError, problem->getLambda(),
+                        problem->getDeltaParameters(), problem->getGradient(),
+                        problem->numEffectiveParams());
+                good_iteration = gainRatio > options.gain_ratio_threashold;
+            }
 
             consecutive_invalid_steps = 0;
         } else {
@@ -235,17 +244,13 @@ Status Solver::solve(Problem::Ptr problem, bool initProblem) {
         }
 
         if (status == Status::RUNNING){
-            // Setup next iteration
-            /**
-             *  if (good_iteration) {
-             *      μ := μ ∗ max{ 1/3, 1 − (2*gainRatio − 1)^3 }; ν := 2
-             *  } else {
-             *      μ := μ ∗ ν; ν := 2 ∗ ν
-             *  }
-             *
-             *  ν = Consecutive Failure Factor (failFactor)
-             */
+            // --- Update damping (LM) or trust radius (dogleg) for next iteration ---
+            // LM: if good step, decrease λ (Nielsen: μ := μ * max{1/3, 1-(2ρ-1)³}, ν:=2);
+            //     if bad step, increase λ (μ := μ*ν, ν := 2ν). So next solve uses (H + new_λ)*Δ = -g.
             updateLambda(problem->getLambda(), problem->getFailFactor(), problem->getPredictedGain(), good_iteration);
+            // Dogleg: increase trust radius on accept, decrease on reject (standard trust-region update).
+            if (options.step_type == StepType::DOGLEG)
+                updateTrustRadius(problem, good_iteration);
 
             prev_good_iteration = good_iteration;
         }
