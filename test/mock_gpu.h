@@ -142,6 +142,7 @@ class RigidFitCostFunction : public telef::solver::CostFunction {
 public:
     RigidFitCostFunction(std::vector<float> source, std::vector<float> target);
     virtual ~RigidFitCostFunction();
+    std::vector<telef::solver::LocalParameterization::Ptr> getParameterBlockLocalParameterizations() const override;
     virtual void evaluate(telef::solver::ResidualBlock::Ptr residualBlock);
     virtual void computeJacobians(telef::solver::ResidualBlock::Ptr residualBlock);
 private:

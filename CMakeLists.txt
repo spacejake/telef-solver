@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 cmake_policy(SET CMP0048 NEW)
 
 option (BUILD_TESTS "Build All Tests" ON)
@@ -28,21 +28,19 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -march=native -DUSE_SSE4_INSTRUCTIONS=ON")
 
-set(CUDA_GENCODES
-        #"-gencode arch=compute_52,code=sm_52 -gencode arch=compute_61,code=sm_61 "
-        "-gencode arch=compute_86,code=sm_86" # RTX 30x
-        )
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -rdc=true ${CUDA_GENCODES}")
+# CUDA 12.x: Ampere (86), Ada (89), Hopper (90). Customize via CMAKE_CUDA_ARCHITECTURES.
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES 86 89 90)
+endif()
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -rdc=true")
 set(CMAKE_CUDA_FLAGS_DEBUG "-g -G -DDEBUG")
 set(CMAKE_CUDA_FLAGS_RELEASE "-O3")
-set(CMAKE_CUDA_HOST_COMPILER gcc-7)
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
-    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
-SET(CUDA_SEPARABLE_COMPILATION ON)
-find_package(CUDA REQUIRED)
+find_package(CUDAToolkit 12 REQUIRED)
 
 # sudo apt-get install libatlas-base-dev
 #find_package(CBLAS REQUIRED)
@@ -54,6 +52,7 @@ add_definitions ( -DTEST_DATA_DIR=\"${CMAKE_SOURCE_DIR}/test/data\")
 ############## Define headers and sourcse ################
 set( interfaceHdr
         include/solver/costFunction.h
+        include/solver/lossFunction.h
         include/solver/solver.h
         include/solver/residualBlock.h
         include/solver/residualFunction.h
@@ -130,15 +129,14 @@ set_target_properties(${PROJECT_NAME}
         )
 
 target_include_directories(${PROJECT_NAME}
-        PUBLIC ${CUDA_INCLUDE_DIRS}
+        PUBLIC ${CUDAToolkit_INCLUDE_DIRS}
         PUBLIC ${CMAKE_SOURCE_DIR}/include/
         PUBLIC /usr/local/include )
 
 target_link_libraries(${PROJECT_NAME}
-            ${CUDA_LIBRARIES}
-            -lcudart
-            -lcublas
-            -lcusolver
+            CUDA::cudart
+            CUDA::cublas
+            CUDA::cusolver
             cutelef-solver
         )
 
@@ -148,15 +146,15 @@ add_library(cutelef-solver STATIC
         )
 
 target_include_directories(cutelef-solver
-            PUBLIC ${CUDA_INCLUDE_DIRS}
+            PUBLIC ${CUDAToolkit_INCLUDE_DIRS}
             PUBLIC ${CMAKE_SOURCE_DIR}/include/
         )
 
 target_link_libraries(cutelef-solver
             stdc++fs
-            -lcudart
-            -lcublas
-            -lcusolver
+            CUDA::cudart
+            CUDA::cublas
+            CUDA::cusolver
         )
 
 set_target_properties(cutelef-solver PROPERTIES

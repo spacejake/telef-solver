@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 
+#include "solver/localParameterization.h"
 #include "solver/residualBlock.h"
 
 /**
@@ -30,6 +31,11 @@ namespace telef::solver {
 
         const std::vector<int>& getParameterSizes() const {
             return parameterSizes;
+        }
+
+        /** Optional local parameterization per block; empty or null = Euclidean. Set when building the problem. */
+        virtual std::vector<LocalParameterization::Ptr> getParameterBlockLocalParameterizations() const {
+            return std::vector<LocalParameterization::Ptr>(parameterSizes.size());
         }
 
         /**

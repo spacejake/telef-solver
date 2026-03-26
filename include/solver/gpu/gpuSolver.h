@@ -40,18 +40,19 @@ namespace telef::solver {
 
         virtual float calcError(float *error, const float *residuals, const int nRes);
 
-        virtual bool solveSystem(float *deltaParams, float* hessianLowTri,
-                                 const float* hessians, const float* gradients,
-                                 const int nParams);
-
-        virtual void updateParams(float* newParams, const float* params, const float* newDelta, const int nParams);
+        void updateParams(float* newParams, const float* params, const float* newDelta, const int nParams, ParameterBlock* paramBlock = nullptr) override;
 
         virtual void copyParams(float *destParams, const float *srcParams, const int nParams);
 
         // Step Functions
-        virtual void
-        updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep);
+        void updateHessians(float *hessians, float *dampeningFactors, float *lambda, const int nParams, bool goodStep,
+                            DampingType dampingType = DampingType::LAMBDA_I, float diagFloorEpsilon = 1e-6f) override;
 
+        bool solveSystem(float *deltaParams, float* hessianLowTri, const float* hessians, const float* gradients,
+                         const int nParams, float* scaleBuffer = nullptr,
+                         StepType stepType = StepType::DAMPED_LM, float* trustRadius = nullptr, float* auxBuffer = nullptr) override;
+
+        float computeModelReduction(float *deltaParams, float *gradient, const float *hessianDamped, int nParams, float* auxBuffer = nullptr) override;
 
         virtual bool evaluateGradient(float &norm_inf_grad, float *gradient, int nParams, float tolerance);
 
@@ -97,6 +98,8 @@ namespace telef::solver {
         virtual void initializeLambda(float *lambda, float tauFactor, float *hessian, int nParams);
 
         virtual void updateLambda(float *lambda, float *failFactor, float *predGain, bool goodStep);
+
+        void updateTrustRadius(Problem::Ptr problem, bool goodStep) override;
 
     private:
         void initHandlers() {
